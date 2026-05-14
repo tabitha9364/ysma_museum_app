@@ -1,0 +1,456 @@
+[
+  {
+    "title": "Red Sky",
+    "artist": "David Dale",
+    "year": "1975",
+    "location": "Gallery A · West Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art1.png",
+    "description": "Red Sky is a landscape beadwork/bead painting of trees and birds in a red sky. Dale lavishly uses his colorful beads on a wooden board to create contrast for his forms. The surface of the painting feels very dense with the compaction of the beads. The most prominent feature is the huge tree and its complex tap root system. The palm trees and birds are very noticeable in the distant horizon of the scene displayed due to the contrasting shades of the beads. The soil is colored in brown with noticeable striations in red and soil organisms in black."
+  },
+  {
+    "title": "Iwin",
+    "artist": "Susan Wenger",
+    "year": "1960",
+    "location": "Gallery A · West Wing",
+    "tag": "Spiritual",
+    "image": "assets/images/art2.png",
+    "description": "A depiction of eerie figures resembling Yoruba spirits (iwin), who are said to inhabit forests. The central figure beats a drum while others dance, surrounded by patterns that suggest their mystical nature."
+  },
+  {
+    "title": "Faces",
+    "artist": "Sam Ebohon",
+    "year": "2011",
+    "location": "Gallery A · West Wing",
+    "tag": "Portrait",
+    "image": "assets/images/art3.png",
+    "description": "In Faces, the artist captures various expressions and angles, emphasizing individuality and emotion through his characteristic vibrant style."
+  },
+  {
+    "title": "The Dancers",
+    "artist": "David Dale",
+    "year": "1967",
+    "location": "Gallery A · West Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art4.png",
+    "description": "The Dancers he portrays female dancers as they vibrantly move to the rhythm of a beat or sound. The ladies are portrayed in vibrant splashes of yellow, orange, brown and blue- all vivid and bright colors which makes the painting very warm and colorful."
+  },
+  {
+    "title": "Celebration",
+    "artist": "Ben Enwonwu",
+    "year": "1970",
+    "location": "Gallery A · West Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art5.png",
+    "description": "Celebration is a expression of an African cultural dancer performing with her arms spread in joy and happiness as she moves her feet to the rhythm of the music being played for her. Enwonwu displays his aesthetic maturity with his blend of different colours. The work also captures the concept of Negritude that is deeply rooted in his ideology as an artist."
+  },
+  {
+    "title": "Dimkpa",
+    "artist": "George Edozie",
+    "year": "2018",
+    "location": "Gallery A · West Wing",
+    "tag": "Royal",
+    "image": "assets/images/art6.png",
+    "description": "George Edozie’s Dimkpa is a tall giant sculpture of a man with layers of fabric that join at different points to form its giant-sized figure. The fabrics are brightly coloured and form the base on which the sculpture stands tall with arms akimbo. The sculpture’s chest and head are raised high, showing poise and elegance, with some dance beads tied around its ankles, resembling some traditional masquerades in Nigeria. The artist created this piece using iron support in the form of a man, on which he tied the fabrics in bits and pieces to look like layers of rags. Having worked on many fabric sculptures, the artists used this piece as a figurative representation of African leaders and showed it for the first time at the National Museum, Lagos. “They don’t listen to anybody or whatever they listen to is not right”, the artist says. “That figure stands very proudly; he raises his head up as though listening to no one. It shows the power the African leader possesses; they can do anything”. George Edozie describes “Dimkpa” with the Igbo proverb “Dimkpa eze onye agwana m” which means “a strong king that nobody can talk to”. The king, represented by this sculpture, is stubborn and incorrigible."
+  },
+  {
+    "title": "Choice of Freedom",
+    "artist": "Olawunmi Banjo",
+    "year": "2014",
+    "location": "Gallery A · West Wing",
+    "tag": "Historical",
+    "image": "assets/images/art7.png",
+    "description": "In this painting, a figure wrapped in checkered black-and-white fabric struggles to free herself. The fabric represents bondage, while the thorns beneath her feet symbolize the harsh reality she’s trying to escape. Her sideways gaze and grappling with the fabric highlight her decision to fight for freedom."
+  },
+  {
+    "title": "Bonded",
+    "artist": "Collins Obinoro",
+    "year": "2018",
+    "location": "Gallery A · West Wing",
+    "tag": "Symbolic",
+    "image": "assets/images/art8.png",
+    "description": "The head of a black woman made of colored spoons and chains. Bonded relates an important message of self-identity for all women of color in Africa and all over the world. Unique features such as the skin color and the bold natural hair peculiar to the race are emphasized as symbols to be conscious and proud of at all times irrespective of modern day societal pressure, thoughts and trends."
+  },
+  {
+    "title": "Glimpse of Glory",
+    "artist": "Olaku Abiodun",
+    "year": "1989",
+    "location": "Gallery A · West Wing",
+    "tag": "Historical",
+    "image": "assets/images/art9.png",
+    "description": "Glimpse of Glory is a tribute to famous Nigerian footballer, Samuel Sochukwuma Okwaraji, who died in active service to the nation during a world cup qualifier at the National Stadium, Surulere, Lagos on the 12th of August, 1989. Before he died he represented famous football clubs in Europe including AS Roma, VFB Stuttgart, Dinamo Zagreb among others. Sam Okwaraji, as he was famously called, was a true patriot who demonstrated true professionalism, team spirit, discipline and leadership on and off the pitch. This tribute reminds viewers of the sad demise of a patriotic hero, a source of national pride and inspiration to many."
+  },
+  {
+    "title": "Drummers' Return",
+    "artist": "Yusuf Grillo",
+    "year": "1983/1999",
+    "location": "Gallery A · West Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art10.png",
+    "description": "Drummers’ Return is a representation of Yoruba talking drummers dressed in Agbada who, as the title implies, are probably on their way home after an event. Gángan, the Yoruba talking drum has been part of the heritage of the people for ages and drumming is a very essential aspect of the music and live cultural performances in Yorubaland. The traditional talking drummers are very skilled in the act of “Drumminication”, a system of communication common amongst different African ethnic societies that involves the sounds from drums. As common in Grillo’s style, the characters seem to be arrested in a rather restrained motion and one might guess they are reminiscing and chatting about their performance earlier during the day. The stretching/elongation of forms and images common in his paintings is also noticeable. As an artist, Grillo fuses the western techniques and style learned during his formative training with his rich Yoruba artistic history and heritage in the philosophy of “Natural Synthesis” promulgated by the Zaria Art Society and its members."
+  },
+
+  {
+    "title": "Goje Player",
+    "artist": "Jimoh Buraimoh",
+    "year": "2013",
+    "location": "Gallery B · East Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art11.png",
+    "description": "Goje Player is a classic bead painting showing a traditional musician playing the goje, a stringed instrument prominent in the Northern parts of Nigeria. In his unique style of rendition, Jimoh uses very colourful beads of different shades for this figurative expression of great aesthetic quality."
+  },
+  {
+    "title": "Lagos Woman",
+    "artist": "Olumide Onadipe",
+    "year": "2014",
+    "location": "Gallery B · East Wing",
+    "tag": "Urban",
+    "image": "assets/images/art12.png",
+    "description": "The Lagos Woman shows an abstract, yet stylistic portrait of a Yoruba woman created with an interplay of leaves of a plant for aesthetic appreciation. One familiar with crops might want to guess the leaves to be cassava leaves. Olumide uses different shades of red and black colours to clearly define the facial features including the eyes, nose and lips. It is very evident that she is wearing a large head-tie, a component typical of Owambe, party outfits for Lagos women. The whole body seems to be emerging or rising into the dark background of the painting from the right with the leaves giving it a sculptural feel."
+  },
+  {
+    "title": "The Comforter",
+    "artist": "Olawunmi Banjo",
+    "year": "2013",
+    "location": "Gallery B · East Wing",
+    "tag": "Emotional",
+    "image": "assets/images/art13.png",
+    "description": "The Comforter is a painting of a sorrowful mother and her sensitive and caring son. At a glance, one sees the warm connection and love between mother and son radiating from this piece. As common in her paintings, Olawunmi Banjo’s very close attention to detail in the hyper-realistic expression of the subtle features of both characters, using a fine, smooth texture that gives the painting so much aesthetic appeal is quite commendable. This is a unique quality of her style that has endeared her to many. The mother’s countenance calls to mind the frustration, worry, depression and pain we all experience at various low points of our human endeavor. However, there is always that person who is there to console, reawaken our spirits and make us believe again. In her case it is her sensitive and loving son, in other cases it could be a friend or relative we always look up to. It is interesting to note that the characters of the painting are Olawunmi’s nephew and his mother."
+  },
+  {
+    "title": "The Queen Mother and the Princess",
+    "artist": "Fidel Oyiogu",
+    "year": "2011",
+    "location": "Gallery F · Lower Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art14.png",
+    "description": "In this piece, the artist depicts a mother and daughter as they stand with their backs to each other. Their frames are stylized as the neck elongates into a curve while their small heads sit comfortably on this slender neck. Their facial features are pointed and linear. The artist employs the use of bright colours like green, yellow, blue, red, purple and brown in rendering this piece."
+  },
+  {
+    "title": "Ijo (Africa Dances)",
+    "artist": "Ben Enwonwu",
+    "year": "1957",
+    "location": "Gallery B · East Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art15.png",
+    "description": "Ijo is part of the Africa Dances, a series of paintings done by the icon, Ben Enwonwu between the 1940's and 1960's in his quest to explore and demonstrate his own views on the state of modern Nigerian culture at the time, using symbolic imagery in scenes of dance, and ritual performance from his Onitsha-Igbo heritage and other cultures in the country as well. The painting shows the dance performance of an Ijo Masquerade of the Ijaw people of the Niger River, southern Nigeria."
+  },
+  {
+    "title": "Iya Abikun (FESTAC 77)",
+    "artist": "Erhabor Emokpae",
+    "year": "1977",
+    "location": "Gallery B · East Wing",
+    "tag": "Historical",
+    "image": "assets/images/art16.png",
+    "description": "Iya Abikun is the mother of such a child. The expression of frailty, sadness and pain is written all over the face of the mother who is a victim of this spiritual misfortune. The heart is full of anxiety about the future of her child as every minute of his/her existence is unpredictable."
+  },
+  {
+    "title": "Triumph",
+    "artist": "Bruce Onobrakpeya",
+    "year": "1994",
+    "location": "Gallery B · East Wing",
+    "tag": "Historical",
+    "image": "assets/images/art17.png",
+    "description": "Triumph is an ivory etching abstractly portraying a community standing victorious over the lifeless bodies of their oppressors."
+  },
+  {
+    "title": "Ola (I/4)",
+    "artist": "Abayomi Barber",
+    "year": "1961",
+    "location": "Gallery B · East Wing",
+    "tag": "Portrait",
+    "image": "assets/images/art18.png",
+    "description": "Ola (1/4) is the first of a series of 4 post-independence sculptures of the Nigerian woman, dressed in a native attire. Her head is covered with a traditional scarf. She is probably of Yoruba decent, seemingly staring at something on her left corner. Her outlook is symbolic for its expression of elegance, grace and pride in a middle-aged, independent black woman."
+  },
+  {
+    "title": "Music for the Soul",
+    "artist": "Erhabor Emokpae",
+    "year": "1960",
+    "location": "Gallery B · East Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art19.png",
+    "description": "In this artwork, a man joyfully holds a drum, seemingly immersed in the rhythmic beats resonating from his soul. A full moon partially veiled by a cloud, casts an illuminating glow on the backdrop. The man's expression exudes joy, capturing the essence of his connection to the music, creating a harmonious blend of visual and emotional elements."
+  },
+  {
+    "title": "When I was a Child",
+    "artist": "Sam Ebohon",
+    "year": "2011",
+    "location": "Gallery C · North Wing",
+    "tag": "Emotional",
+    "image": "assets/images/art20.png",
+    "description": "In When I Was a Child, fluid strokes and colors depict a father lifting his child high in the air, while the child, mid-movement between sitting and crawling, appears in the corner. The painting nostalgically reflects on the carefree innocence of childhood, capturing the joy of simply being."
+  },
+  {
+    "title": "All Fingers are not Equal",
+    "artist": "Rom Isichei",
+    "year": "2005",
+    "location": "Gallery C · North Wing",
+    "tag": "Social",
+    "image": "assets/images/art21.png",
+    "description": "A woman in deep thought stares at her fingers while holding her hands close to her lips. The painting is divided into six colored patches, each in warm shades of yellow, orange, red, and brown. The title and the woman’s expression provoke reflection on the theme of inequality, symbolized by her focus on her fingers."
+  },
+
+  {
+    "title": "When The Owl Sees an Intruder",
+    "artist": "Chike Aniakor",
+    "year": "2011",
+    "location": "Gallery C · North Wing",
+    "tag": "Symbolic",
+    "image": "assets/images/art22.png",
+    "description": "In When the Owl sees an Intruder, Aniakor captures the launch of a loud echo into the night’s air reverberating in the ferocity of two large, persistently confrontational eyes, interrogating the sudden appearance of a stranger. Below on the forest ground, lengths of bold sprawling strokes construe a complex maze-work to secure the resident’s homestead from wary feet of interlopers."
+  },
+  {
+    "title": "Ascent of the Moon",
+    "artist": "Chike Aniakor",
+    "year": "2010",
+    "location": "Gallery C · North Wing",
+    "tag": "Spiritual",
+    "image": "assets/images/art23.png",
+    "description": "Viewed through the filter of the sky and the clouds, The Ascent of the Moon, an appreciation of the moon from the earth, inspires diverse ranges of alternative or similar depiction, as dictated by glowing light, shapes of appearance and calendar. For Chike Aniakor, the adoption of lunar iconography as graphical tool instigates either the beginning of thematic direction or the completion of a painting. He effectively salutes its eternal presence in the affairs of humankind. The logic of his work’s luminance can be found in the lunar arc."
+  },
+  {
+    "title": "Sense of Duty",
+    "artist": "Tayo Adenaike",
+    "year": "1980",
+    "location": "Gallery C · North Wing",
+    "tag": "Historical",
+    "image": "assets/images/art24.png",
+    "description": "Sense on Duty is a stylized representation of a man cradling a child. The forms are depicted with the use of fluid lines. The use of the 'uli' motif is evident as the 'agwolagwo' motif is seen beside the form over which the male figure cradles the child. The colours used are yellow, blue, red and brown."
+  },
+  {
+    "title": "The Man's Mind",
+    "artist": "Zinno Orara",
+    "year": "2005",
+    "location": "Gallery C · North Wing",
+    "tag": "Psychological",
+    "image": "assets/images/art25.png",
+    "description": "In this contemplative painting, a man’s head is outlined with white lines against a dark background. Splashes of red, yellow, blue, and white paint cover the head, symbolizing the chaos and concerns in a man’s mind—the struggle to provide, self-realization, and understanding one’s purpose."
+  },
+  {
+    "title": "Where are you going",
+    "artist": "Bolaji Ogunrosoye",
+    "year": "2018",
+    "location": "Gallery C · North Wing",
+    "tag": "Philosophical",
+    "image": "assets/images/art26.png",
+    "description": "'Where Are You Going' is a picture of a woman elegantly dressed in traditional African attire, surrounded by lush green leaves, with the question 'Where is home?' prominently displayed. This artwork may speak to those who have left their homelands to live in foreign places, perhaps losing touch with their roots. The woman symbolizes the enduring beauty of these forgotten places, suggesting that they can flourish once more if given the proper care and attention."
+  },
+  {
+    "title": "NOK Head (Male)",
+    "artist": "Unknown",
+    "year": "500 BC",
+    "location": "Gallery C · North Wing",
+    "tag": "Historical",
+    "image": "assets/images/art27.png",
+    "description": "Typical of Nok sculptures, this figure has triangular eyes with holes in its eyes and mouth and hair parted into mounds. Closely looking at the work, it is interesting to note the use of geometric shapes- triangles, circles or ovals, and semicircles in almost every facial which is typical of African styled art. The elongated face of the piece and its cropped hairdo certifies it as a male figure."
+  },
+  {
+    "title": "Abe nu Gongo",
+    "artist": "Yusuf Grillo",
+    "year": "1994",
+    "location": "Gallery C · North Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art28.png",
+    "description": "In Abe Nu Gongo, Grillo presents a man standing confidently in profile. His sharp features, including a bald head and tribal marks, are accentuated by a striking outfit of purple and turquoise blue. The man wears charms around his neck, and the dark background enhances the vividness of the figure. Grillo’s use of color and composition draws the viewer’s focus to the man’s commanding presence."
+  },
+  {
+    "title": "The Drummer",
+    "artist": "Ben Enwonwu",
+    "year": "1978",
+    "location": "Gallery C · North Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art29.png",
+    "description": "This miniature of The Drummer is in the permanent collection of the Yemisi Shyllon Museum of Art and is currently on display at the exhibition “Mirroring Man: Society and Politics in Nigerian Art”, the museum’s maiden exhibition on Nigeria’s art history and the role the nation’s artists have played in shaping the history and identity of their country through art."
+  },
+  {
+    "title": "Gonache",
+    "artist": "Obiora Udechukwu",
+    "year": "1997",
+    "location": "Gallery C · North Wing",
+    "tag": "Spiritual",
+    "image": "assets/images/art30.png",
+    "description": "This work represents the artist's exploration of watercolor as a medium. Upon closer examination, a poem can be discerned in the background, highlighting the interplay between poetry and visual art—two distinct yet complementary forms of creative expression."
+  },
+  {
+    "title": "The Love Legacy",
+    "artist": "Uche Edochie",
+    "year": "2004",
+    "location": "Gallery D · South Wing",
+    "tag": "Emotional",
+    "image": "assets/images/art31.png",
+    "description": "The Love Legacy portrays the face of a woman covered partly with her hands. Patterns that bear a resemblance to inkblots appear to cover different parts of the painting which include her hands and face. The hairdo she has on are long braids and some of it is clasped in her hands as she covers the lower part of her face. This is a monochromatic painting as one colour only is used on the entire painting."
+  },
+
+  {
+    "title": "Ayan (god of music)",
+    "artist": "Lamidi Fakeye",
+    "year": "2007",
+    "location": "Gallery D · South Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art32.png",
+    "description": "Ayan simply means “a drummer” in Yoruba. Drummers are quite known and acclaimed as good entertainers among the Yoruba people. His Some of them combine vocals and dance with their acoustics during their orchestra to the delight of all their viewers and listeners. Evident is Fakeye’s display of mastery and touch of perfection in the finishing of the seeming naturalistic forms on this sculpture. His bold rendition of forms and their parts allow him to creatively decorate them with intricate incisions that keep amazing his admirers. Notice the hourglass drum, Gangan strapped across the drummer’s neck and the raised drum stick, Opa on his right hand. Surrounding him are his cohorts."
+  },
+  {
+    "title": "Omo Yoruba",
+    "artist": "Gbenga Offo",
+    "year": "2001",
+    "location": "Gallery D · South Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art33.png",
+    "description": "The art and design elements of line, shape, form, colour and texture aggressively mix up in this painting to compose the face of a lady. The eyes and nose are stylized into shapes and coils respectively. Three tribal marks in the form of oval shapes are positioned on the cheeks. Red, yellow, purple, blue and gray are the colours used in the painting. It is an abstract representation of a Yoruba woman, distinguishable by the tribal marks across her cheek."
+  },
+  {
+    "title": "The Brown Eyes Series",
+    "artist": "Nyemike Onwuka",
+    "year": "2012",
+    "location": "Gallery D · South Wing",
+    "tag": "Portrait",
+    "image": "assets/images/art34.png",
+    "description": "In this piece, Nyemike Onwuka portrays the beauty of a Fulani young woman. Her oval shaped eyes slant to the base of her ear while her mouth comes together to form a pout. Her head is wrapped in the scarfs typically worn by Northern women. The blotches of paint and drops gives the painting a dripping effect. The hues of brown are very evident throughout the work as the background and the lady herself have the paint dripping around them. It is highly evident that the lady's eyes are brown hence the title 'The Brown Eyes Series'. This work must be part of a series of works which the artist has produced to explore the 'brown eyes' as a theme."
+  },
+  {
+    "title": "Sisi Eko",
+    "artist": "El Anatsui",
+    "year": "1990",
+    "location": "Gallery D · South Wing",
+    "tag": "Urban",
+    "image": "assets/images/art35.png",
+    "description": "The term Sisi Eko means Lagos lady. In this piece, he depicts a Lagos lady who is always trendy, classy and fashionable. It is a loose pile-up of linearly designed organic and geometrically formed wooden blocks/panels. Hanging on one of its blocks is an irregularly shaped wooden block with a rope which connotes the lady's handbag. One could infer El was attempting to abstractly depict of a classy lagosian lady who loves to put her bag on her shoulder always and seeks to be treated with care and respect as she displays her elegance. Through its non-permanent nature, El gives it's curator the possibility of re-arrangement due to the rotary nature of the panels of the "
+  },
+  {
+    "title": "Nigerian Woman",
+    "artist": "Ben Osawe",
+    "year": "1982",
+    "location": "Gallery D · South Wing",
+    "tag": "Portrait",
+    "image": "assets/images/art36.png",
+    "description": "Ben Osawe makes a brilliant attempt to realism in this stylistic expression of the Nigerian Woman. This very inviting portrait is unique in every sense with its extraordinary details. The smooth texture, contours and overall structure embody his authorial identity as an artist. Symbolic in its own rights, the portrait is filled with different qualities that are synonymous with the Nigerian, African woman including beauty, elegance, confidence, simplicity, courage, humility, resilience, strength and boldness. Bringing these attributes to life in a piece of art is an ability that is very remarkable."
+  },
+  {
+    "title": "Emanating",
+    "artist": "Odun Orimolade",
+    "year": "2012",
+    "location": "Gallery D · South Wing",
+    "tag": "Abstract",
+    "image": "assets/images/art37.png",
+    "description": "In Emanating, the artist uses shades of grey, white, and black to depict a central object, evoking a sense of abstraction and depth. The word 'emanating' means 'to originate or to spread out', which is reflected in the artwork's composition. The shades and textures in the piece appear to flow outward, symbolizing the extension of energy, ideas, or emotions from a core source. This work invites viewers to contemplate the essence of creation and how influences radiate from a single point, shaping the surrounding environment."
+  },
+  {
+    "title": "The Ancestral Lineage",
+    "artist": "Mufu Onifade",
+    "year": "2013",
+    "location": "Gallery D · South Wing",
+    "tag": "Traditional",
+    "image": "assets/images/art38.png",
+    "description": "Alajobi (Ancestral lineage) as the title of the work states, depicts cultural beliefs, festivities, and heritage. In the painting, we see some heads of figures, small and big. The ancestors call out to their descendants to guide and direct them. In traditional African society, ancestors are revered and form part of the belief system. They are one with the gods and can be called upon to help their descendants."
+  },
+  {
+    "title": "Effusive Series",
+    "artist": "Nyemike Onwuka",
+    "year": "2019",
+    "location": "Gallery D · South Wing",
+    "tag": "Emotional",
+    "image": "assets/images/art39.png",
+    "description": "This artwork portrays a woman with her hair elegantly wrapped in a scarf, and her lips painted red, complemented by matching earrings and a necklace. Her eyes are closed, her expression conveying deep emotion as if lost in distant thought. The piece must be a part of the artist's “Effusive” series, which explores themes of cultural identity, resilience, strength, connection, and community. This series is particularly distinguished by its vibrant use of color and emotion, capturing the essence of human experiences and cultural narratives."
+  },
+  {
+    "title": "Prayer Request",
+    "artist": "Amon Kotei",
+    "year": "1997",
+    "location": "Gallery E · Upper Wing",
+    "tag": "Spiritual",
+    "image": "assets/images/art40.png",
+    "description": "The painting depicts a female figure down on her knees with her palms clasped together in prayer. The face of the lady is hardly visible as mostly dark colours have been used in depicting it. The painting also appears to have a number of colours going across the figure vertically and this creates a multi colored effect. The colours in the background can be seen on the figure as well."
+  },
+  {
+    "title": "Ariya",
+    "artist": "David Dale",
+    "year": "1980",
+    "location": "Gallery E · Upper Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art41.png",
+    "description": "Ariya in Yoruba simply means “merry”. An engraving on wood, the piece displays five human figures (two men and three women) who are dressed to the nine for an occasion in their native attires. The men are dressed in Agbada and Fila while the women are adorned in grotesque blouses, head ties and wrappers on their waist. From their looks, one could guess they are middle-aged men and women. They all seem to be in motion; the woman on the extreme right can be seen in a “flirting” posture with her pause on her left arm. Her co-conversers seem to be enjoying the moment staring at her. The men on the other hand look indifferent in their demeanor with their attention on other things."
+  },
+
+  {
+    "title": "Agbommuo",
+    "artist": "Bona Ezeudu",
+    "year": "2012",
+    "location": "Gallery E · Upper Wing",
+    "tag": "Spiritual",
+    "image": "assets/images/art42.png",
+    "description": "In Agbommuo, Ezeudu presents a central circular face with two dashes for eyes and a small mouth, surrounded by colorful patterns and light waves. The title, meaning “the spirits vomit” in Igbo, suggests a supernatural or mystical theme. The painting evokes the release of spiritual energy or revelations from beyond the physical realm."
+  },
+  {
+    "title": "Woman in Veil",
+    "artist": "Ben Osawe",
+    "year": "1978",
+    "location": "Gallery E · Upper Wing",
+    "tag": "Portrait",
+    "image": "assets/images/art43.png",
+    "description": "Done in 1978 in Benin, the Woman in Veil is classic from Ben who loved casting images of women. It shows a young girl dressed in a robe covering her head and body down to the level of her loins. In trying to put a name to the veil, the Islamic Hijab first comes to mind at the sight of this beauty. Her hidden arms seem to be folded (under the veil) around her chest as shown by the slight bulge in that region of her body. One can tell she is very young judging from her countenance and outlook in general."
+  },
+  {
+    "title": "Christ in the Time of Covid",
+    "artist": "Chike Aniakor",
+    "year": "2022",
+    "location": "Gallery E · Upper Wing",
+    "tag": "Religious",
+    "image": "assets/images/art44.png",
+    "description": "In this piece Christ in the time of COVID, Aniakor gives an illustration of a bare-chested man wearing facemask and surrounded by fire, projecting the messianic inference due in part to: the cruciform pose, fire of purging, and evidence of a lanced body. The Invocation of Christ in the time of COVID by pictorial act resonates as an act of faith, talismanic objectification, or icon-painting like in the Byzantine tradition."
+  },
+  {
+    "title": "Sometimes I Wonder Why",
+    "artist": "Rom Isichei",
+    "year": "1998",
+    "location": "Gallery E · Upper Wing",
+    "tag": "Emotional",
+    "image": "assets/images/art45.png",
+    "description": "This piece by Rom Isichei portrays a child with hands beneath their chin, eyes distant in thought. The colors—light brown, red, yellow ochre, and green—create a warm and pensive atmosphere. The figure seems to be pondering life’s difficulties, perhaps questioning the absence of loved ones, exuding a calm yet contemplative mood that invites empathy."
+  },
+  {
+    "title": "The Lady with Scarf",
+    "artist": "Chike Aniakor",
+    "year": "2010",
+    "location": "Gallery E · Upper Wing",
+    "tag": "Portrait",
+    "image": "assets/images/art46.png",
+    "description": "In Lady with scarf, Aniakor pictures the face of a lady outdoor wearing a bright scarf wrapped around the hair, effectively framed by trellis, multi-coloured print-designs and folding-patterns of the bonnet. She holds up her head high and straight as if buoyed by the superb sartorial statements made by the chiffon, silk or organza fabric. Usually, Aniakor’s artistic approach places emphasis on social experiences as components of creative expression, which he believes communicate the lived realities of Africans. This ideology is evident in this work. The values of humility, obedience, and cultural interaction are personified by the depicted lady, making this work a powerful representation of African life."
+  },
+  {
+    "title": "Conversation",
+    "artist": "Tayo Quaye",
+    "year": "1976",
+    "location": "Gallery F · Lower Wing",
+    "tag": "Social",
+    "image": "assets/images/art47.png",
+    "description": "The artwork “Conversation” depicts a woman's head surrounded by objects resembling local instruments, such as gongs and drums. Scattered throughout are numerous strings and chords, symbolizing the way conversations flow and connect."
+  },
+  {
+    "title": "The Adanma Masquerade",
+    "artist": "Okpu Eze",
+    "year": "1989",
+    "location": "Gallery F · Lower Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art48.png",
+    "description": "Done in 1989, Adanma Masquerade is a classic masterpiece denoting the famous contemporary female masquerade of the Igbo people. Adanma or Adamma simply means the beautiful first daughter (of the family). Though worn and performed by a male masker, the mask is designed and decorated to give it a feminine outlook and appeal. The mask is known to be harmless and non-spiritual and is not worshipped by the people as common with other powerful masks. It is specially made for entertainment and can be worn by any man who can comfortably display and perform feminine dance attributes/steps qualities while dancing. Okpu Eze captures the notable female attributes of beauty, elegance, shyness and grace associated with the masquerade which is lauded for its unique ability to “enchant” her spectators with gracious body movements during performance."
+  },
+  {
+    "title": "Rhythmes",
+    "artist": "Fidel Oyiogu",
+    "year": "2012",
+    "location": "Gallery F · Lower Wing",
+    "tag": "Cultural",
+    "image": "assets/images/art49.png",
+    "description": "Rhymes is a mixed media on canvas portraying the side view of a human head. The head is predominantly red with intricate gold and black patterns. The background, painted yellow, features diverse patterns which complements and enhances the vibrancy of the head. The red head may symbolize passion or intensity. The gold and black patterns could convey complexity or diversity within the human experience and the yellow background may suggest positivity or energy."
+  },
+  {
+    "title": "The Acrobat",
+    "artist": "Bunmi Babatunde",
+    "year": "2010",
+    "location": "Gallery F · Lower Wing",
+    "tag": "Dynamic",
+    "image": "assets/images/art50.png",
+    "description": "The Acrobat captures a figure, probably dancing, with her body twisted on a pole. Her hands are firmly holding the pole in grip to ensure balance as she twists and moves her entire body, displaying her acrobatic skills. The surface of the body looks “scaly” and could be for aesthetic effects. Pole dancing, besides being an entertaining aspect of contemporary pop culture, has been demonstrated by some scholars as an act of expression, building self-confidence and efficacy, and exploring sexuality by women. Recreational pole dancing has been shown to sexually liberate and empower Afro-American women."
+  }
+]
