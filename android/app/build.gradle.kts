@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.ysma_museum_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = flutter.compileSdkVersion 34
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -25,7 +25,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = flutter.targetSdkVersion 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         
@@ -34,6 +34,8 @@ android {
 
     buildTypes {
         release {
+            minifyEnabled false
+            shrinkResources false
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")

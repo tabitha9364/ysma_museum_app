@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import random
 import re
-import shutil
 import unicodedata
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from pathlib import Path
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageOps
 
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
@@ -33,15 +33,35 @@ class Variant:
     perspective_x: float
     perspective_y: float
     crop: float
+    brightness: float = 1.0
+    contrast: float = 1.0
+    color: float = 1.0
+    sharpness: float = 1.0
+    obstruction: float = 0.0
+    blur: float = 0.0
 
 
 VARIANTS = [
+    Variant("original", 0, 1.00, 0.00, 0.00, 0.00, 0.00, 1.00),
+    Variant("screenshot", 0, 0.96, 0.00, 0.00, 0.01, 0.01, 1.00, contrast=0.96, sharpness=0.92),
+    Variant("darker", 0, 1.02, 0.00, 0.00, 0.00, 0.00, 1.00, brightness=0.72, contrast=1.08),
+    Variant("brighter", 0, 1.02, 0.00, 0.00, 0.00, 0.00, 1.00, brightness=1.26, contrast=0.96),
+    Variant("low_light", -2, 1.04, 0.02, -0.02, 0.02, 0.00, 1.00, brightness=0.58, contrast=1.14),
+    Variant("bright_room", 2, 1.04, -0.02, 0.02, -0.02, 0.00, 1.00, brightness=1.38, contrast=0.92),
     Variant("scene", -22, 0.84, -0.12, -0.08, -0.14, 0.04, 1.00),
     Variant("scene", -15, 0.92, 0.10, -0.10, 0.10, -0.03, 1.00),
     Variant("scene", -8, 1.04, -0.08, 0.08, -0.08, 0.06, 1.00),
     Variant("scene", 8, 0.88, 0.13, 0.03, 0.14, 0.02, 1.00),
     Variant("scene", 18, 1.08, -0.10, -0.04, -0.10, -0.06, 1.00),
     Variant("scene", 24, 0.95, 0.05, 0.11, 0.12, -0.08, 1.00),
+    Variant("far", -4, 0.72, -0.10, 0.06, -0.06, 0.02, 1.00, sharpness=0.96),
+    Variant("far", 5, 0.78, 0.12, -0.04, 0.08, -0.03, 1.00, brightness=0.92),
+    Variant("far", 0, 0.68, 0.00, 0.10, 0.00, 0.00, 1.00, brightness=1.10),
+    Variant("upright", 0, 0.92, -0.12, 0.00, 0.00, 0.00, 1.00),
+    Variant("upright", 0, 1.08, 0.12, 0.00, 0.00, 0.00, 0.88),
+    Variant("upright", 0, 1.22, 0.00, -0.12, 0.00, 0.00, 0.76),
+    Variant("upright", 0, 1.32, 0.00, 0.12, 0.00, 0.00, 0.68),
+    Variant("upright", 0, 1.45, -0.14, 0.12, 0.00, 0.00, 0.58),
     Variant("crop", -4, 1.10, 0.00, 0.00, -0.03, 0.02, 0.90),
     Variant("crop", 5, 1.18, -0.06, 0.04, 0.04, -0.03, 0.84),
     Variant("crop", -9, 1.26, 0.07, -0.06, -0.06, 0.05, 0.78),
@@ -50,12 +70,18 @@ VARIANTS = [
     Variant("zoom", -3, 1.54, -0.09, 0.07, -0.03, 0.04, 0.60),
     Variant("zoom", 4, 1.68, 0.08, -0.08, 0.04, -0.04, 0.54),
     Variant("zoom", 0, 1.82, 0.00, 0.00, 0.02, 0.02, 0.48),
-    Variant("upright", 0, 0.92, -0.12, 0.00, 0.00, 0.00, 1.00),
-    Variant("upright", 0, 1.08, 0.12, 0.00, 0.00, 0.00, 0.88),
-    Variant("upright", 0, 1.22, 0.00, -0.12, 0.00, 0.00, 0.76),
-    Variant("upright", 0, 1.32, 0.00, 0.12, 0.00, 0.00, 0.68),
-    Variant("upright", 0, 1.45, -0.14, 0.12, 0.00, 0.00, 0.58),
-    Variant("upright", 0, 1.55, 0.14, -0.12, 0.00, 0.00, 0.52),
+    Variant("zoom_dark", -5, 1.58, -0.11, 0.08, -0.02, 0.03, 0.58, brightness=0.70, contrast=1.10),
+    Variant("zoom_bright", 5, 1.62, 0.10, -0.08, 0.03, -0.03, 0.56, brightness=1.22, contrast=0.98),
+    Variant("close", -2, 1.92, -0.16, 0.00, -0.02, 0.02, 0.44, sharpness=1.08),
+    Variant("close", 3, 2.05, 0.16, 0.00, 0.02, -0.02, 0.40, brightness=0.95, sharpness=1.08),
+    Variant("close", 0, 2.16, 0.00, -0.14, 0.00, 0.00, 0.36, brightness=1.08),
+    Variant("close", 0, 2.28, 0.00, 0.14, 0.00, 0.00, 0.34, contrast=1.08),
+    Variant("obstructed", -6, 1.12, -0.06, 0.03, -0.04, 0.02, 0.86, obstruction=0.10),
+    Variant("obstructed", 7, 1.18, 0.06, -0.03, 0.04, -0.02, 0.82, obstruction=0.12, brightness=0.88),
+    Variant("obstructed", 0, 1.32, -0.10, -0.08, 0.00, 0.00, 0.70, obstruction=0.14, brightness=1.12),
+    Variant("obstructed", 4, 1.48, 0.10, 0.08, 0.03, 0.00, 0.62, obstruction=0.16),
+    Variant("soft", -3, 1.06, 0.04, 0.04, -0.02, 0.02, 0.92, brightness=0.90, contrast=0.92, blur=0.35),
+    Variant("soft", 3, 1.12, -0.04, -0.04, 0.02, -0.02, 0.88, brightness=1.14, contrast=0.94, blur=0.25),
 ]
 
 
@@ -208,27 +234,48 @@ def alpha_composite_clipped(canvas: Image.Image, subject: Image.Image, x: int, y
     canvas.alpha_composite(source, (left, top))
 
 
-def apply_vignette(image: Image.Image, strength: float) -> Image.Image:
+def apply_lighting(image: Image.Image, variant: Variant) -> Image.Image:
+    result = ImageEnhance.Brightness(image).enhance(variant.brightness)
+    result = ImageEnhance.Contrast(result).enhance(variant.contrast)
+    result = ImageEnhance.Color(result).enhance(variant.color)
+    result = ImageEnhance.Sharpness(result).enhance(variant.sharpness)
+    if variant.blur > 0:
+        result = result.filter(ImageFilter.GaussianBlur(radius=variant.blur))
+    return result
+
+
+def add_partial_obstruction(image: Image.Image, strength: float, rng: random.Random) -> Image.Image:
     if strength <= 0:
         return image
 
     width, height = image.size
-    cache_key = (width, height, strength)
-    mask = VIGNETTE_MASK_CACHE.get(cache_key)
-    if mask is None:
-        center_x = width / 2
-        center_y = height / 2
-        max_distance = (center_x * center_x + center_y * center_y) ** 0.5
-        mask = Image.new("L", (width, height))
-        mask.putdata([
-            int(255 * max(0, 1 - strength * ((((x - center_x) ** 2 + (y - center_y) ** 2) ** 0.5 / max_distance) ** 1.8)))
-            for y in range(height)
-            for x in range(width)
-        ])
-        VIGNETTE_MASK_CACHE[cache_key] = mask
+    overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    side = rng.choice(["left", "right", "top", "bottom"])
+    color_base = rng.randint(18, 54)
+    alpha = rng.randint(92, 138)
+    fill = (color_base, color_base, color_base, alpha)
 
-    channels = ImageOps.colorize(mask, black=(0, 0, 0), white=(255, 255, 255))
-    return ImageChops.multiply(image, channels)
+    if side in {"left", "right"}:
+        block_width = int(width * rng.uniform(strength * 0.65, strength * 1.25))
+        block_height = int(height * rng.uniform(0.26, 0.58))
+        top = int(height * rng.uniform(0.04, 0.68))
+        if side == "left":
+            box = (-int(block_width * 0.25), top, block_width, top + block_height)
+        else:
+            box = (width - block_width, top, width + int(block_width * 0.25), top + block_height)
+    else:
+        block_width = int(width * rng.uniform(0.28, 0.68))
+        block_height = int(height * rng.uniform(strength * 0.65, strength * 1.25))
+        left = int(width * rng.uniform(0.04, 0.68))
+        if side == "top":
+            box = (left, -int(block_height * 0.25), left + block_width, block_height)
+        else:
+            box = (left, height - block_height, left + block_width, height + int(block_height * 0.25))
+
+    draw.rounded_rectangle(box, radius=max(4, int(min(width, height) * 0.025)), fill=fill)
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=max(1.0, min(width, height) * 0.006)))
+    return Image.alpha_composite(image.convert("RGBA"), overlay).convert("RGB")
 
 
 def augment(image: Image.Image, variant: Variant, seed: int) -> Image.Image:
@@ -263,12 +310,14 @@ def augment(image: Image.Image, variant: Variant, seed: int) -> Image.Image:
     alpha_composite_clipped(canvas, subject, x, y)
 
     result = canvas.convert("RGB")
-    result = ImageEnhance.Brightness(result).enhance(variant.brightness)
-    result = ImageEnhance.Contrast(result).enhance(variant.contrast)
-    result = ImageEnhance.Color(result).enhance(variant.color)
-    result = ImageEnhance.Sharpness(result).enhance(variant.sharpness)
-    result = apply_vignette(result, variant.vignette)
+    result = apply_lighting(result, variant)
+    result = add_partial_obstruction(result, variant.obstruction, rng)
     return result
+
+
+def stable_seed(folder_name: str, variant_index: int) -> int:
+    digest = hashlib.sha256(f"{folder_name}:{variant_index}".encode("utf-8")).digest()
+    return int.from_bytes(digest[:4], "big")
 
 
 def load_artworks(repo_root: Path) -> list[dict]:
@@ -287,7 +336,7 @@ def existing_training_images(folder: Path) -> list[Path]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate augmented artwork training images.")
     parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[1])
-    parser.add_argument("--variants", type=int, default=20)
+    parser.add_argument("--variants", type=int, default=len(VARIANTS))
     parser.add_argument("--quality", type=int, default=92)
     parser.add_argument("--force", action="store_true", help="Overwrite existing aug_XX.jpg files.")
     parser.add_argument("--dry-run", action="store_true")
@@ -298,8 +347,8 @@ def main() -> int:
     folders = sorted(path for path in training_root.iterdir() if path.is_dir())
     artworks = load_artworks(repo_root)
 
-    if args.variants != len(VARIANTS):
-        raise ValueError(f"This script currently defines exactly {len(VARIANTS)} variants.")
+    if args.variants < 1 or args.variants > len(VARIANTS):
+        raise ValueError(f"Variants must be between 1 and {len(VARIANTS)}.")
 
     if len(artworks) != 50:
         raise ValueError(f"Expected 50 artworks in metadata, found {len(artworks)}.")
@@ -334,12 +383,12 @@ def main() -> int:
         source = repo_root / artwork["image"]
         image = image_to_rgba(source)
 
-        for index, variant in enumerate(VARIANTS, start=1):
+        for index, variant in enumerate(VARIANTS[: args.variants], start=1):
             output = folder / f"aug_{index:02d}.jpg"
             if output.exists() and not args.force:
                 continue
 
-            augmented = augment(image, variant, seed=hash((folder.name, index)) & 0xFFFFFFFF)
+            augmented = augment(image, variant, seed=stable_seed(folder.name, index))
             augmented.save(output, "JPEG", quality=args.quality, optimize=True, progressive=True)
             total_created += 1
 

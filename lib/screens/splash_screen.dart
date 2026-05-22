@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -8,14 +10,42 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  Timer? _timer;
+  bool _navigating = false;
+
+  void goToAuth() {
+    if (_navigating || !mounted) {
+      return;
+    }
+
+    _navigating = true;
+    _timer?.cancel();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      Navigator.of(
+        context,
+        rootNavigator: true,
+      ).pushNamedAndRemoveUntil('/auth', (route) => false);
+    });
+  }
 
   @override
   void initState() {
     super.initState();
 
-    Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, '/onboarding1');
+    // Auto navigate quickly so repeat users are not held on the splash.
+    _timer = Timer(const Duration(milliseconds: 850), () {
+      if (!mounted) return;
+
+      goToAuth();
     });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -25,8 +55,6 @@ class _SplashScreenState extends State<SplashScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-
-            // ⭐ Background stars
             Positioned.fill(
               child: Opacity(
                 opacity: 0.15,
@@ -37,17 +65,13 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
 
-            // 🎯 CENTER CONTENT
             Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-
-                  // 🔷 LOGO + TEXT
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -62,23 +86,21 @@ class _SplashScreenState extends State<SplashScreen> {
 
                       const SizedBox(width: 12),
 
-                      Column(
+                      const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
-                            "YSMA",
+                            'YSMA',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+
                           Text(
-                            "SMART EXPERIENCE",
-                            style: TextStyle(
-                              color: Colors.amber,
-                              fontSize: 10,
-                            ),
+                            'SMART EXPERIENCE',
+                            style: TextStyle(color: Colors.amber, fontSize: 10),
                           ),
                         ],
                       ),
@@ -87,23 +109,31 @@ class _SplashScreenState extends State<SplashScreen> {
 
                   const SizedBox(height: 40),
 
-                  // 📝 Bottom text (now closer to center)
                   const Text(
-                    "Enhancing Museum Experience Through AR",
+                    'Enhancing Museum Experience Through AR',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
 
                   const SizedBox(height: 8),
 
-                  const Text(
-                    "TAP TO CONTINUE",
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 10,
+                  GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: goToAuth,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      child: Text(
+                        'TAP TO CONTINUE',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                 ],

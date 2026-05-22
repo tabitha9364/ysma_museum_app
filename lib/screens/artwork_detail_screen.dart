@@ -1,7 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
-import '../models/artwork.dart';
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:provider/provider.dart';
+import '../models/artwork.dart';
+import '../services/app_settings.dart';
+import '../services/supabase_service.dart';
+import '../services/user_preferences.dart';
+import '../utils/colors.dart';
 
 class ArtworkDetailScreen extends StatefulWidget {
   final Artwork artwork;
@@ -14,83 +21,184 @@ class ArtworkDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<ArtworkDetailScreen> createState() =>
-      _ArtworkDetailScreenState();
+  State<ArtworkDetailScreen> createState() => _ArtworkDetailScreenState();
 }
 
-class _ArtworkDetailScreenState
-    extends State<ArtworkDetailScreen> {
+class _ArtworkDetailScreenState extends State<ArtworkDetailScreen> {
+  final AudioPlayer player = AudioPlayer();
 
   late int selectedTab;
-
-  final AudioPlayer player = AudioPlayer();
 
   Duration duration = Duration.zero;
   Duration position = Duration.zero;
 
   bool isPlaying = false;
+  bool audioReady = false;
+  bool relatedLoading = true;
+  List<Artwork> relatedArtworks = [];
 
   @override
   void initState() {
     super.initState();
-
     selectedTab = widget.initialTab;
-
     setupAudio();
+    loadRelatedArtworks();
   }
 
-  // 🔥 SETUP AUDIO
-  void setupAudio() async {
+  Future<void> setupAudio() async {
+    if (widget.artwork.audioUrl.trim().isEmpty) {
+      return;
+    }
 
-    // LOAD AUDIO URL
-    await player.setUrl(widget.artwork.audioUrl);
+    try {
+      await player.setUrl(widget.artwork.audioUrl);
 
-    // TOTAL DURATION
-    player.durationStream.listen((d) {
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
-        duration = d ?? Duration.zero;
+        audioReady = true;
       });
-    });
 
-    // CURRENT POSITION
-    player.positionStream.listen((p) {
-      setState(() {
-        position = p;
-      });
-    });
+      if (selectedTab == 1 && context.read<AppSettings>().autoPlayAudio) {
+        unawaited(player.play());
+      }
 
-    // PLAY STATE
-    player.playerStateStream.listen((state) {
-      setState(() {
-        isPlaying = state.playing;
+      player.durationStream.listen((value) {
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          duration = value ?? Duration.zero;
+        });
       });
-    });
+
+      player.positionStream.listen((value) {
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          position = value;
+        });
+      });
+
+      player.playerStateStream.listen((state) {
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          isPlaying = state.playing;
+        });
+      });
+    } catch (error) {
+      debugPrint('Audio setup failed: $error');
+    }
   }
 
-  // ▶ PLAY / RESUME
-  void playAudio() async {
+  Future<void> loadRelatedArtworks() async {
+    try {
+      final artworks = await SupabaseService.fetchArtworks();
+      final related = artworks.where((artwork) {
+        return artwork.id != widget.artwork.id && _relatedScore(artwork) > 0;
+      }).toList()..sort((a, b) => _relatedScore(b).compareTo(_relatedScore(a)));
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        relatedArtworks = related.take(8).toList();
+        relatedLoading = false;
+      });
+    } catch (error) {
+      debugPrint('Related artworks failed: $error');
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        relatedLoading = false;
+      });
+    }
+  }
+
+  int _relatedScore(Artwork artwork) {
+    var score = 0;
+
+    if (artwork.artist.trim().toLowerCase() ==
+        widget.artwork.artist.trim().toLowerCase()) {
+      score += 4;
+    }
+
+    if (artwork.year.trim().isNotEmpty &&
+        artwork.year.trim() == widget.artwork.year.trim()) {
+      score += 2;
+    }
+
+    if (artwork.tag.trim().toLowerCase() ==
+        widget.artwork.tag.trim().toLowerCase()) {
+      score += 1;
+    }
+
+    return score;
+  }
+
+  Future<void> playAudio() async {
+    if (!audioReady) {
+      _showMessage('Audio is not available for this artwork yet.');
+      return;
+    }
+
     await player.play();
   }
 
-  // ⏸ PAUSE
-  void pauseAudio() async {
+  Future<void> pauseAudio() async {
     await player.pause();
   }
 
-  // ⏩ FORWARD 10s
-  void skipForward() async {
-    final newPosition =
-        position + const Duration(seconds: 10);
+  Future<void> skipForward() async {
+    final target = position + const Duration(seconds: 10);
+    final safeTarget = target > duration && duration != Duration.zero
+        ? duration
+        : target;
 
-    await player.seek(newPosition);
+    await player.seek(safeTarget);
   }
 
-  // ⏪ BACKWARD 10s
-  void skipBackward() async {
-    final newPosition =
-        position - const Duration(seconds: 10);
+  Future<void> skipBackward() async {
+    final target = position - const Duration(seconds: 10);
+    await player.seek(target.isNegative ? Duration.zero : target);
+  }
 
-    await player.seek(newPosition);
+  Future<void> shareArtwork() async {
+    await Clipboard.setData(
+      ClipboardData(
+        text:
+            '${widget.artwork.title} by ${widget.artwork.artist}\n${widget.artwork.imageUrl}',
+      ),
+    );
+
+    await UserPreferences.addRecentActivity(
+      type: 'share',
+      artworkTitle: widget.artwork.title,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    _showMessage('Artwork details copied for sharing.');
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   @override
@@ -101,28 +209,20 @@ class _ArtworkDetailScreenState
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: Colors.black,
-
       body: Stack(
         children: [
-
-          // 🖼 IMAGE
           SizedBox.expand(
             child: CachedNetworkImage(
               imageUrl: widget.artwork.imageUrl,
               fit: BoxFit.cover,
-
               placeholder: (context, url) => Container(
                 color: Colors.grey.shade900,
                 child: const Center(
-                  child: CircularProgressIndicator(
-                    color: Colors.amber,
-                  ),
+                  child: CircularProgressIndicator(color: Colors.amber),
                 ),
               ),
-
               errorWidget: (context, url, error) {
                 return Container(
                   color: Colors.grey.shade900,
@@ -137,242 +237,68 @@ class _ArtworkDetailScreenState
               },
             ),
           ),
-
-          // 🔙 TOP BAR
           SafeArea(
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16),
-
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
-
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-
                   IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                    ),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
                     onPressed: () => Navigator.pop(context),
                   ),
-
-                  const Icon(
-                    Icons.share,
-                    color: Colors.white,
+                  IconButton(
+                    tooltip: 'Share artwork',
+                    icon: const Icon(Icons.share, color: Colors.white),
+                    onPressed: shareArtwork,
                   ),
                 ],
               ),
             ),
           ),
-
-          // 📦 BOTTOM PANEL
           Align(
             alignment: Alignment.bottomCenter,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final maxPanelHeight = constraints.maxHeight * 0.43;
 
-            child: Container(
-              padding: const EdgeInsets.all(20),
-
-              decoration: const BoxDecoration(
-                color: Color(0xFF1E2F45),
-
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(30),
-                ),
-              ),
-
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
-
-                children: [
-
-                  // TITLE
-                  Text(
-                    widget.artwork.title,
-
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                return Container(
+                  width: double.infinity,
+                  constraints: BoxConstraints(maxHeight: maxPanelHeight),
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardFor(context),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(30),
                     ),
                   ),
-
-                  const SizedBox(height: 10),
-
-                  // TABS
-                  Row(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _tab("Description", 0),
-                      _tab("Audio", 1),
-                      _tab("Related", 2),
+                      Text(
+                        widget.artwork.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.textFor(context),
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _tabStrip(),
+                      const SizedBox(height: 12),
+                      Flexible(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          child: _selectedTabContent(),
+                        ),
+                      ),
                     ],
                   ),
-
-                  const SizedBox(height: 15),
-
-                  // DESCRIPTION TAB
-                  if (selectedTab == 0)
-                    Text(
-                      widget.artwork.description,
-
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        height: 1.5,
-                      ),
-                    ),
-
-                  // AUDIO TAB
-                  if (selectedTab == 1)
-                    Column(
-                      children: [
-
-                        // TIME
-                        Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment
-                                  .spaceBetween,
-
-                          children: [
-
-                            Text(
-                              formatTime(position),
-
-                              style: const TextStyle(
-                                color: Colors.white70,
-                              ),
-                            ),
-
-                            Text(
-                              formatTime(duration),
-
-                              style: const TextStyle(
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        // 🎚 SLIDER
-                        // 🎚 SLIDER WITH GREY BACKGROUND
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white12,
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: SliderTheme(
-                            data: SliderTheme.of(context).copyWith(
-                              trackHeight: 3,
-                              thumbShape: const RoundSliderThumbShape(
-                                enabledThumbRadius: 6,
-                              ),
-                              overlayShape: const RoundSliderOverlayShape(
-                                overlayRadius: 12,
-                              ),
-                            ),
-                            child: Slider(
-                              min: 0,
-                              max: duration.inSeconds.toDouble(),
-
-                              value: duration.inSeconds == 0
-                                  ? 0
-                                  : position.inSeconds
-                                      .clamp(0, duration.inSeconds)
-                                      .toDouble(),
-
-                              onChanged: (value) async {
-                                await player.seek(
-                                  Duration(seconds: value.toInt()),
-                                );
-                              },
-
-                              activeColor: Colors.amber,
-                              inactiveColor: Colors.white70,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        // 🎵 CONTROLS
-                        Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment
-                                  .spaceEvenly,
-
-                          children: [
-
-                            // BACKWARD
-                            IconButton(
-                              icon: const Icon(
-                                Icons.replay_10,
-                                color: Colors.amber,
-                                size: 35,
-                              ),
-
-                              onPressed:
-                                  skipBackward,
-                            ),
-
-                            // PLAY / PAUSE
-                            GestureDetector(
-                              onTap: () {
-
-                                if (isPlaying) {
-                                  pauseAudio();
-                                } else {
-                                  playAudio();
-                                }
-                              },
-
-                              child: Container(
-                                padding:
-                                    const EdgeInsets
-                                        .all(18),
-
-                                decoration:
-                                    const BoxDecoration(
-                                  color: Colors.amber,
-                                  shape:
-                                      BoxShape.circle,
-                                ),
-
-                                child: Icon(
-                                  isPlaying
-                                      ? Icons.pause
-                                      : Icons.play_arrow,
-
-                                  color: Colors.black,
-                                  size: 40,
-                                ),
-                              ),
-                            ),
-
-                            // FORWARD
-                            IconButton(
-                              icon: const Icon(
-                                Icons.forward_10,
-                                color: Colors.amber,
-                                size: 35,
-                              ),
-
-                              onPressed:
-                                  skipForward,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -380,65 +306,285 @@ class _ArtworkDetailScreenState
     );
   }
 
-  // 🔘 TAB BUTTON
-  Widget _tab(String text, int index) {
+  Widget _scrollableTab({required Key key, required Widget child}) {
+    return SingleChildScrollView(
+      key: key,
+      physics: const BouncingScrollPhysics(),
+      child: child,
+    );
+  }
 
+  Widget _selectedTabContent() {
+    final settings = context.watch<AppSettings>();
+
+    if (selectedTab == 0) {
+      return _scrollableTab(
+        key: const ValueKey('description'),
+        child: Text(
+          widget.artwork.description,
+          style: TextStyle(
+            color: AppColors.mutedTextFor(context),
+            fontSize: 14 + (settings.textScale * 8),
+            height: 1.5,
+          ),
+        ),
+      );
+    }
+
+    if (selectedTab == 1) {
+      return SingleChildScrollView(
+        key: const ValueKey('audio'),
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  formatTime(position),
+                  style: TextStyle(color: AppColors.mutedTextFor(context)),
+                ),
+                Text(
+                  formatTime(duration),
+                  style: TextStyle(color: AppColors.mutedTextFor(context)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 4,
+                activeTrackColor: AppColors.primary,
+                inactiveTrackColor: AppColors.isDark(context)
+                    ? Colors.white30
+                    : Colors.black26,
+                thumbColor: AppColors.primary,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+              ),
+              child: Slider(
+                min: 0,
+                max: duration.inSeconds.toDouble(),
+                value: duration.inSeconds == 0
+                    ? 0
+                    : position.inSeconds
+                          .clamp(0, duration.inSeconds)
+                          .toDouble(),
+                onChanged: (value) async {
+                  await player.seek(Duration(seconds: value.toInt()));
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.replay_10,
+                    color: Colors.amber,
+                    size: 35,
+                  ),
+                  onPressed: skipBackward,
+                ),
+                GestureDetector(
+                  onTap: () {
+                    if (isPlaying) {
+                      pauseAudio();
+                    } else {
+                      playAudio();
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: const BoxDecoration(
+                      color: Colors.amber,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isPlaying ? Icons.pause : Icons.play_arrow,
+                      color: Colors.black,
+                      size: 40,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.forward_10,
+                    color: Colors.amber,
+                    size: 35,
+                  ),
+                  onPressed: skipForward,
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      key: const ValueKey('related'),
+      child: _relatedContent(),
+    );
+  }
+
+  Widget _tabStrip() {
+    return SizedBox(
+      height: 46,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: AppColors.panelGreyFor(context),
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Row(
+          children: [
+            _tab('Description', 0),
+            _tab('Audio', 1),
+            _tab('Related', 2),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _tab(String text, int index) {
     final active = selectedTab == index;
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedTab = index;
-        });
-      },
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedTab = index;
+          });
 
-      child: Container(
-        margin: const EdgeInsets.only(right: 10),
-
-        padding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 8,
-        ),
-
-        decoration: BoxDecoration(
-          color:
-              active
-                  ? Colors.amber
-                  : Colors.white10,
-
-          borderRadius:
-              BorderRadius.circular(20),
-        ),
-
-        child: Text(
-          text,
-
-          style: TextStyle(
-            color:
-                active
-                    ? Colors.black
-                    : Colors.white70,
+          if (index == 1 && context.read<AppSettings>().autoPlayAudio) {
+            unawaited(playAudio());
+          }
+        },
+        child: Container(
+          height: double.infinity,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          decoration: BoxDecoration(
+            color: active ? Colors.amber : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              text,
+              maxLines: 1,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: active ? Colors.black : AppColors.mutedTextFor(context),
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  // ⏱ FORMAT TIME
-  String formatTime(Duration d) {
+  Widget _relatedContent() {
+    if (relatedLoading) {
+      return const SizedBox(
+        height: 90,
+        child: Center(child: CircularProgressIndicator(color: Colors.amber)),
+      );
+    }
 
-    final minutes =
-        d.inMinutes
-            .remainder(60)
-            .toString()
-            .padLeft(2, '0');
+    if (relatedArtworks.isEmpty) {
+      return Text(
+        'No related artworks yet.',
+        style: TextStyle(color: AppColors.mutedTextFor(context)),
+      );
+    }
 
-    final seconds =
-        d.inSeconds
-            .remainder(60)
-            .toString()
-            .padLeft(2, '0');
+    return SizedBox(
+      height: 126,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: relatedArtworks.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final artwork = relatedArtworks[index];
 
-    return "$minutes:$seconds";
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ArtworkDetailScreen(artwork: artwork),
+                ),
+              );
+            },
+            child: SizedBox(
+              width: 104,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: CachedNetworkImage(
+                      imageUrl: artwork.imageUrl,
+                      height: 76,
+                      width: 104,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    artwork.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.textFor(context),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    _relatedReason(artwork),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.mutedTextFor(context),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _relatedReason(Artwork artwork) {
+    if (artwork.artist.trim().toLowerCase() ==
+        widget.artwork.artist.trim().toLowerCase()) {
+      return artwork.artist;
+    }
+
+    if (artwork.year.trim().isNotEmpty &&
+        artwork.year.trim() == widget.artwork.year.trim()) {
+      return artwork.year;
+    }
+
+    return artwork.tag;
+  }
+
+  String formatTime(Duration value) {
+    final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
+
+    return '$minutes:$seconds';
   }
 }

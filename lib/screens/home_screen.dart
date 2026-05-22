@@ -1,11 +1,16 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+
 import '../models/artwork.dart';
 import '../services/supabase_service.dart';
+import '../services/user_preferences.dart';
+import '../utils/colors.dart';
+import 'artwork_spotlight_screen.dart';
 import 'artwork_preview_screen.dart';
-import 'recommended_screen.dart';
+import 'museum_map_screen.dart';
 import 'profile_screen.dart';
+import 'recommended_screen.dart';
 import 'scan_screen.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,34 +20,83 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final searchController = TextEditingController();
+
   List<Artwork> artworks = [];
   bool isLoading = true;
+  String searchQuery = '';
+
+  List<Artwork> get displayedArtworks {
+    final query = searchQuery.trim().toLowerCase();
+
+    if (query.isEmpty) {
+      return artworks;
+    }
+
+    return artworks.where((artwork) {
+      return artwork.title.toLowerCase().contains(query) ||
+          artwork.artist.toLowerCase().contains(query) ||
+          artwork.tag.toLowerCase().contains(query) ||
+          artwork.location.toLowerCase().contains(query) ||
+          artwork.year.toLowerCase().contains(query);
+    }).toList();
+  }
 
   @override
   void initState() {
     super.initState();
+    UserPreferences.profileVersion.addListener(_handleProfileChanged);
     loadArtworks();
+  }
+
+  @override
+  void dispose() {
+    UserPreferences.profileVersion.removeListener(_handleProfileChanged);
+    searchController.dispose();
+    super.dispose();
+  }
+
+  void _handleProfileChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
   }
 
   Future<void> loadArtworks() async {
     try {
       final data = await SupabaseService.fetchArtworks();
+      final ordered = data.toList()
+        ..sort((a, b) {
+          final priority = _homePriority(a).compareTo(_homePriority(b));
+          if (priority != 0) {
+            return priority;
+          }
+
+          return a.id.compareTo(b.id);
+        });
+
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
-        artworks = data;
+        artworks = ordered;
         isLoading = false;
       });
 
-      // ✅ PRELOAD IMAGES
-      for (var art in artworks) {
-        precacheImage(
-          NetworkImage(art.imageUrl),
-          context,
-        );
-      }
+      debugPrint('Loaded ${artworks.length} artworks from Supabase');
 
-    } catch (e) {
-      debugPrint("Error loading artworks: $e");
+      for (final artwork in artworks) {
+        precacheImage(NetworkImage(artwork.imageUrl), context);
+      }
+    } catch (error) {
+      debugPrint('Error loading artworks: $error');
+
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         isLoading = false;
@@ -50,222 +104,224 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _openScanner() {
+    if (isLoading) {
+      _showMessage('Artwork data is still loading. Try again in a moment.');
+      return;
+    }
+
+    if (artworks.isEmpty) {
+      _showMessage('Artwork data could not be loaded. Check your connection.');
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ScanScreen(artworks: artworks)),
+    );
+  }
+
+  void _openMap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const MuseumMapScreen()),
+    );
+  }
+
+  void _openSpotlight() {
+    if (isLoading) {
+      _showMessage('Artwork data is still loading. Try again in a moment.');
+      return;
+    }
+
+    if (artworks.isEmpty) {
+      _showMessage('Artwork data could not be loaded. Check your connection.');
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ArtworkSpotlightScreen(artworks: artworks),
+      ),
+    );
+  }
+
+  int _homePriority(Artwork artwork) {
+    final title = _homeKey(artwork.title);
+
+    if (title == 'themansmind') {
+      return 0;
+    }
+
+    if (title == 'senseofduty') {
+      return 1;
+    }
+
+    return 2;
+  }
+
+  String _homeKey(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll('&', 'and')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '');
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF071A2F),
+    final visibleArtworks = displayedArtworks;
+    final background = AppColors.backgroundFor(context);
+    final surface = AppColors.surfaceFor(context);
+    final text = AppColors.textFor(context);
+    final mutedText = AppColors.mutedTextFor(context);
+    final displayName = UserPreferences.getCurrentUserFirstName();
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
-      // ✅ FIXED BOTTOM NAV BAR
+    return Scaffold(
+      backgroundColor: background,
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: const BoxDecoration(
-          color: Color(0xFF0F2A44),
-        ),
+        decoration: BoxDecoration(color: surface),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-
-            // ✅ HOME BUTTON NOW WORKS
-            GestureDetector(
-              onTap: () {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const HomeScreen(),
-                  ),
-                  (route) => false,
-                );
-              },
-
-              child: const Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.home, color: Colors.white),
-                  SizedBox(height: 4),
-                  Text(
-                    "Home",
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12,
-                    ),
-                  )
-                ],
-              ),
-            ),
-
-            const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.center_focus_strong, color: Colors.white54),
-                SizedBox(height: 4),
-                Text("Scan",
-                    style: TextStyle(color: Colors.white54, fontSize: 12))
-              ],
-            ),
-
-            const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.map_outlined, color: Colors.white54),
-                SizedBox(height: 4),
-                Text("Map",
-                    style: TextStyle(color: Colors.white54, fontSize: 12))
-              ],
-            ),
-
-            // ✅ PROFILE BUTTON
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ProfileScreen(),
-                  ),
-                );
-              },
-              child: const Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.person_outline, color: Colors.white54),
-                  SizedBox(height: 4),
-                  Text("Profile",
-                      style:
-                          TextStyle(color: Colors.white54, fontSize: 12))
-                ],
-              ),
-            ),
+            _navItem(Icons.home, 'Home', true, () {}),
+            _navItem(Icons.center_focus_strong, 'Scan', false, _openScanner),
+            _navItem(Icons.map_outlined, 'Map', false, _openMap),
+            _navItem(Icons.person_outline, 'Profile', false, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            }),
           ],
         ),
       ),
-
-      // ✅ BODY (NOW PROPERLY CONNECTED)
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               const SizedBox(height: 20),
-
-              const Text("Welcome back",
-                  style: TextStyle(color: Colors.white54)),
-
+              Text('Welcome back', style: TextStyle(color: mutedText)),
               const SizedBox(height: 5),
-
-              const Text("Hello, Dorcas",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold)),
-
-              const SizedBox(height: 20),
-
-              // SEARCH BAR
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                height: 50,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F2A44),
-                  borderRadius: BorderRadius.circular(15),
+              Text(
+                'Hello, $displayName \u{1F44B}',
+                style: TextStyle(
+                  color: text,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
-                child: const Row(
+              ),
+              const SizedBox(height: 20),
+              _searchBar(),
+              SizedBox(height: keyboardOpen ? 18 : 25),
+              if (!keyboardOpen) ...[
+                Row(
                   children: [
-                    Icon(Icons.search, color: Colors.white54),
-                    SizedBox(width: 10),
-                    Text("Search artwork, galleries...",
-                        style: TextStyle(color: Colors.white38)),
+                    Expanded(
+                      child: _actionCard(
+                        Icons.center_focus_strong,
+                        'Scan\nArtwork',
+                        Colors.amber,
+                        _openScanner,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _actionCard(
+                        Icons.map_outlined,
+                        'Navigate\nMuseum',
+                        Colors.blue,
+                        _openMap,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _actionCard(
+                        Icons.image_outlined,
+                        'Artwork\nSpotlight',
+                        Colors.purple,
+                        _openSpotlight,
+                      ),
+                    ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 25),
-
-              // ACTION CARDS
+                const SizedBox(height: 30),
+              ],
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ScanScreen(artworks: artworks),
-                        ),
-                      );
-                    },
-                    child: buildActionCard(
-                      Icons.center_focus_strong,
-                      "Scan\nArtwork",
-                      Colors.amber,
-                    ),
+                  Text(
+                    searchQuery.trim().isEmpty
+                        ? 'Recommended for You'
+                        : 'Search Results',
+                    style: TextStyle(color: text, fontWeight: FontWeight.bold),
                   ),
-                  buildActionCard(Icons.map_outlined,
-                      "Navigate\nMuseum", Colors.blue),
-                  buildActionCard(Icons.image_outlined,
-                      "Explore\nArtworks", Colors.purple),
+                  if (searchQuery.trim().isEmpty)
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RecommendedScreen(),
+                          ),
+                        );
+                      },
+                      child: const Row(
+                        children: [
+                          Text(
+                            'See All',
+                            style: TextStyle(color: AppColors.primary),
+                          ),
+                          SizedBox(width: 5),
+                          Icon(
+                            Icons.arrow_forward,
+                            color: AppColors.primary,
+                            size: 16,
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
-
-              const SizedBox(height: 30),
-
-              // HEADER
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("Recommended for You",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold)),
-
-                  InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const RecommendedScreen(),
-                        ),
-                      );
-                    },
-                    child: const Row(
-                      children: [
-                        Text("See All",
-                            style:
-                                TextStyle(color: Color(0xFFFFC107))),
-                        SizedBox(width: 5),
-                        Icon(Icons.arrow_forward,
-                            color: Color(0xFFFFC107), size: 16),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
               const SizedBox(height: 15),
-
-              // ARTWORK LIST
               Expanded(
                 child: isLoading
                     ? const Center(
-                        child: CircularProgressIndicator(
-                            color: Colors.amber),
+                        child: CircularProgressIndicator(color: Colors.amber),
                       )
-                    : artworks.isEmpty
-                        ? const Center(
-                            child: Text("No artworks found",
-                                style:
-                                    TextStyle(color: Colors.white54)),
-                          )
-                        : ListView.builder(
+                    : visibleArtworks.isEmpty
+                    ? Center(
+                        child: Text(
+                          searchQuery.trim().isEmpty
+                              ? 'No artworks found'
+                              : 'No artworks match "$searchQuery"',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: mutedText),
+                        ),
+                      )
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          return ListView.builder(
                             scrollDirection: Axis.horizontal,
-                            itemCount: artworks.length,
+                            itemCount: visibleArtworks.length,
                             itemBuilder: (context, index) {
-                              final art = artworks[index];
-                              return buildArtwork(context, art);
+                              return _artworkCard(
+                                visibleArtworks[index],
+                                constraints.maxHeight,
+                              );
                             },
-                          ),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -274,68 +330,151 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ACTION CARD
-  Widget buildActionCard(
-      IconData icon, String text, Color color) {
+  Widget _searchBar() {
     return Container(
-      width: 100,
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      height: 50,
       decoration: BoxDecoration(
-        color: const Color(0xFF0F2A44),
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.surfaceFor(context),
+        borderRadius: BorderRadius.circular(15),
       ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color),
+      child: TextField(
+        controller: searchController,
+        onChanged: (value) {
+          setState(() {
+            searchQuery = value;
+          });
+        },
+        style: TextStyle(color: AppColors.textFor(context)),
+        cursorColor: AppColors.primary,
+        decoration: InputDecoration(
+          hintText: 'Search artwork, artists...',
+          hintStyle: TextStyle(color: AppColors.subtleTextFor(context)),
+          prefixIcon: Icon(
+            Icons.search,
+            color: AppColors.mutedTextFor(context),
           ),
-          const SizedBox(height: 10),
-          Text(text,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  color: Colors.white, fontSize: 12)),
-        ],
+          suffixIcon: searchQuery.isEmpty
+              ? null
+              : IconButton(
+                  tooltip: 'Clear search',
+                  icon: Icon(
+                    Icons.close,
+                    color: AppColors.mutedTextFor(context),
+                  ),
+                  onPressed: () {
+                    searchController.clear();
+                    setState(() {
+                      searchQuery = '';
+                    });
+                  },
+                ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 15),
+        ),
       ),
     );
   }
 
-  // ARTWORK CARD
-  Widget buildArtwork(
-      BuildContext context, Artwork artwork) {
+  Widget _navItem(
+    IconData icon,
+    String label,
+    bool active,
+    VoidCallback onTap,
+  ) {
+    final color = active
+        ? AppColors.textFor(context)
+        : AppColors.mutedTextFor(context);
+
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(height: 4),
+              Text(label, style: TextStyle(color: color, fontSize: 12)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _actionCard(
+    IconData icon,
+    String text,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 120),
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceFor(context),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textFor(context), fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _artworkCard(Artwork artwork, double availableHeight) {
+    final safeHeight = availableHeight.isFinite ? availableHeight : 420.0;
+    final showDetails = safeHeight >= 145;
+    final rawImageHeight = showDetails ? safeHeight - 48 : safeHeight;
+    final imageHeight = rawImageHeight.clamp(1.0, 420.0).toDouble();
+    final cardWidth = (imageHeight * 0.72).clamp(96.0, 260.0).toDouble();
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                ArtworkPreviewScreen(artwork: artwork),
+            builder: (_) => ArtworkPreviewScreen(artwork: artwork),
           ),
         );
       },
       child: Container(
-        width: 120,
+        width: cardWidth,
         margin: const EdgeInsets.only(right: 15),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             ClipRRect(
               borderRadius: BorderRadius.circular(15),
               child: CachedNetworkImage(
                 imageUrl: artwork.imageUrl,
-                height: 100,
-                width: 120,
+                height: imageHeight,
+                width: cardWidth,
                 fit: BoxFit.cover,
-
                 placeholder: (context, url) => Container(
-                  height: 100,
-                  width: 120,
-                  color: const Color(0xFF1E2F45),
+                  height: imageHeight,
+                  width: cardWidth,
+                  color: AppColors.cardFor(context),
                   child: const Center(
                     child: CircularProgressIndicator(
                       color: Colors.amber,
@@ -343,30 +482,38 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-
                 errorWidget: (context, url, error) => Container(
-                  height: 100,
-                  width: 120,
-                  color: const Color(0xFF1E2F45),
-                  child: const Icon(
+                  height: imageHeight,
+                  width: cardWidth,
+                  color: AppColors.cardFor(context),
+                  child: Icon(
                     Icons.broken_image,
-                    color: Colors.white54,
+                    color: AppColors.mutedTextFor(context),
                   ),
                 ),
               ),
             ),
-
-            const SizedBox(height: 8),
-
-            Text(artwork.title,
+            if (showDetails) ...[
+              const SizedBox(height: 8),
+              Text(
+                artwork.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    const TextStyle(color: Colors.white, fontSize: 12)),
-
-            Text(artwork.artist,
-                style: const TextStyle(
-                    color: Colors.white54, fontSize: 11)),
+                style: TextStyle(
+                  color: AppColors.textFor(context),
+                  fontSize: 12,
+                ),
+              ),
+              Text(
+                artwork.artist,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppColors.mutedTextFor(context),
+                  fontSize: 11,
+                ),
+              ),
+            ],
           ],
         ),
       ),

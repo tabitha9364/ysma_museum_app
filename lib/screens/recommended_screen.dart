@@ -8,13 +8,10 @@ class RecommendedScreen extends StatefulWidget {
   const RecommendedScreen({super.key});
 
   @override
-  State<RecommendedScreen> createState() =>
-      _RecommendedScreenState();
+  State<RecommendedScreen> createState() => _RecommendedScreenState();
 }
 
-class _RecommendedScreenState
-    extends State<RecommendedScreen> {
-
+class _RecommendedScreenState extends State<RecommendedScreen> {
   List<Artwork> artworks = [];
   bool isLoading = true;
 
@@ -26,17 +23,13 @@ class _RecommendedScreenState
 
   Future<void> loadArtworks() async {
     try {
-
-      final data =
-          await SupabaseService.fetchArtworks();
+      final data = await SupabaseService.fetchArtworks();
 
       setState(() {
         artworks = data;
         isLoading = false;
       });
-
     } catch (e) {
-
       debugPrint("Error: $e");
 
       setState(() {
@@ -47,27 +40,22 @@ class _RecommendedScreenState
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: const Color(0xFF071A2F),
 
       body: SafeArea(
         child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
 
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
-
               const SizedBox(height: 10),
 
               // 🔙 BACK + TITLE
               Row(
                 children: [
-
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
 
@@ -79,21 +67,16 @@ class _RecommendedScreenState
                         shape: BoxShape.circle,
                       ),
 
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                      ),
+                      child: const Icon(Icons.arrow_back, color: Colors.white),
                     ),
                   ),
 
                   const SizedBox(width: 12),
 
                   const Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
 
                     children: [
-
                       Text(
                         "Recommended for You",
 
@@ -107,10 +90,7 @@ class _RecommendedScreenState
                       Text(
                         "Personalized picks",
 
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
                       ),
                     ],
                   ),
@@ -122,242 +102,168 @@ class _RecommendedScreenState
               // 🔲 GRID
               Expanded(
                 child: isLoading
-
                     ? const Center(
-                        child:
-                            CircularProgressIndicator(
-                          color: Colors.amber,
+                        child: CircularProgressIndicator(color: Colors.amber),
+                      )
+                    : artworks.isEmpty
+                    ? const Center(
+                        child: Text(
+                          "No artworks found",
+
+                          style: TextStyle(color: Colors.white),
                         ),
                       )
+                    : GridView.builder(
+                        itemCount: artworks.length,
 
-                    : artworks.isEmpty
-
-                        ? const Center(
-                            child: Text(
-                              "No artworks found",
-
-                              style: TextStyle(
-                                color: Colors.white,
-                              ),
-                            ),
-                          )
-
-                        : GridView.builder(
-                            itemCount: artworks.length,
-
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
                               crossAxisSpacing: 15,
                               mainAxisSpacing: 15,
                               childAspectRatio: 0.75,
                             ),
 
-                            itemBuilder:
-                                (context, index) {
+                        itemBuilder: (context, index) {
+                          final art = artworks[index];
 
-                              final art =
-                                  artworks[index];
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
 
-                              return GestureDetector(
-
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          ArtworkPreviewScreen(
-                                        artwork: art,
-                                      ),
-                                    ),
-                                  );
-                                },
-
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment
-                                          .start,
-
-                                  children: [
-
-                                    // IMAGE CARD
-                                    Expanded(
-                                      child: ClipRRect(
-                                        borderRadius:
-                                            BorderRadius
-                                                .circular(20),
-
-                                        child:
-                                            CachedNetworkImage(
-
-                                          imageUrl:
-                                              art.imageUrl,
-
-                                          fit: BoxFit.cover,
-
-                                          placeholder:
-                                              (context,
-                                                      url) =>
-                                                  Container(
-                                            color: const Color(
-                                                0xFF1E2F45),
-
-                                            child:
-                                                const Center(
-                                              child:
-                                                  CircularProgressIndicator(
-                                                color:
-                                                    Colors
-                                                        .amber,
-                                              ),
-                                            ),
-                                          ),
-
-                                          errorWidget:
-                                              (context,
-                                                      url,
-                                                      error) =>
-                                                  Container(
-                                            color: const Color(
-                                                0xFF1E2F45),
-
-                                            child:
-                                                const Icon(
-                                              Icons
-                                                  .broken_image,
-                                              color: Colors
-                                                  .white54,
-                                            ),
-                                          ),
-
-                                          imageBuilder:
-                                              (context,
-                                                  imageProvider) {
-
-                                            return Container(
-
-                                              decoration:
-                                                  BoxDecoration(
-
-                                                image:
-                                                    DecorationImage(
-
-                                                  image:
-                                                      imageProvider,
-
-                                                  fit: BoxFit
-                                                      .cover,
-                                                ),
-                                              ),
-
-                                              child: Stack(
-                                                children: [
-
-                                                  // GRADIENT
-                                                  Positioned.fill(
-                                                    child:
-                                                        Container(
-
-                                                      decoration:
-                                                          BoxDecoration(
-
-                                                        gradient:
-                                                            LinearGradient(
-
-                                                          colors: [
-                                                            Colors
-                                                                .transparent,
-
-                                                            Colors
-                                                                .black
-                                                                .withOpacity(
-                                                                    0.6),
-                                                          ],
-
-                                                          begin:
-                                                              Alignment
-                                                                  .topCenter,
-
-                                                          end: Alignment
-                                                              .bottomCenter,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-
-                                                  // TAG
-                                                  Positioned(
-                                                    bottom:
-                                                        10,
-                                                    left: 10,
-
-                                                    child:
-                                                        Text(
-                                                      art.tag,
-
-                                                      style:
-                                                          const TextStyle(
-                                                        color:
-                                                            Color(
-                                                                0xFFFFC107),
-
-                                                        fontSize:
-                                                            10,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-
-                                    const SizedBox(
-                                        height: 6),
-
-                                    // TITLE
-                                    Text(
-                                      art.title,
-
-                                      maxLines: 1,
-
-                                      overflow:
-                                          TextOverflow
-                                              .ellipsis,
-
-                                      style:
-                                          const TextStyle(
-                                        color:
-                                            Colors.white,
-
-                                        fontWeight:
-                                            FontWeight
-                                                .w600,
-                                      ),
-                                    ),
-
-                                    const SizedBox(
-                                        height: 2),
-
-                                    Text(
-                                      art.artist,
-
-                                      style:
-                                          const TextStyle(
-                                        color:
-                                            Colors.white54,
-
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      ArtworkPreviewScreen(artwork: art),
                                 ),
                               );
                             },
-                          ),
+
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+
+                              children: [
+                                // IMAGE CARD
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(20),
+
+                                    child: CachedNetworkImage(
+                                      imageUrl: art.imageUrl,
+
+                                      fit: BoxFit.cover,
+
+                                      placeholder: (context, url) => Container(
+                                        color: const Color(0xFF1E2F45),
+
+                                        child: const Center(
+                                          child: CircularProgressIndicator(
+                                            color: Colors.amber,
+                                          ),
+                                        ),
+                                      ),
+
+                                      errorWidget: (context, url, error) =>
+                                          Container(
+                                            color: const Color(0xFF1E2F45),
+
+                                            child: const Icon(
+                                              Icons.broken_image,
+                                              color: Colors.white54,
+                                            ),
+                                          ),
+
+                                      imageBuilder: (context, imageProvider) {
+                                        return Container(
+                                          decoration: BoxDecoration(
+                                            image: DecorationImage(
+                                              image: imageProvider,
+
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+
+                                          child: Stack(
+                                            children: [
+                                              // GRADIENT
+                                              Positioned.fill(
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      colors: [
+                                                        Colors.transparent,
+
+                                                        Colors.black.withValues(
+                                                          alpha: 0.6,
+                                                        ),
+                                                      ],
+
+                                                      begin:
+                                                          Alignment.topCenter,
+
+                                                      end: Alignment
+                                                          .bottomCenter,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+
+                                              // TAG
+                                              Positioned(
+                                                bottom: 10,
+                                                left: 10,
+
+                                                child: Text(
+                                                  art.tag,
+
+                                                  style: const TextStyle(
+                                                    color: Color(0xFFFFC107),
+
+                                                    fontSize: 10,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 6),
+
+                                // TITLE
+                                Text(
+                                  art.title,
+
+                                  maxLines: 1,
+
+                                  overflow: TextOverflow.ellipsis,
+
+                                  style: const TextStyle(
+                                    color: Colors.white,
+
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 2),
+
+                                Text(
+                                  art.artist,
+
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
