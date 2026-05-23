@@ -19,23 +19,17 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     _navigating = true;
-    _timer?.cancel();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
 
-      Navigator.of(
-        context,
-        rootNavigator: true,
-      ).pushNamedAndRemoveUntil('/auth', (route) => false);
-    });
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil('/auth', (route) => false);
   }
 
   @override
   void initState() {
     super.initState();
 
-    // Auto navigate quickly so repeat users are not held on the splash.
-    _timer = Timer(const Duration(milliseconds: 850), () {
+    _timer = Timer(const Duration(seconds: 5), () {
       if (!mounted) return;
 
       goToAuth();
@@ -100,7 +94,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
                           Text(
                             'SMART EXPERIENCE',
-                            style: TextStyle(color: Colors.amber, fontSize: 10),
+                            style: TextStyle(
+                              color: Colors.amber,
+                              fontSize: 10,
+                            ),
                           ),
                         ],
                       ),
@@ -112,28 +109,9 @@ class _SplashScreenState extends State<SplashScreen> {
                   const Text(
                     'Enhancing Museum Experience Through AR',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: goToAuth,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      child: Text(
-                        'TAP TO CONTINUE',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          letterSpacing: 1.2,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
                     ),
                   ),
                 ],

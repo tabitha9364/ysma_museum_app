@@ -37,7 +37,6 @@ dependencies:
   just_audio: ^0.9.40
   supabase_flutter: ^2.12.4
   provider: ^6.1.5+1
-  ar_flutter_plugin: ^0.7.3
   cached_network_image: ^3.4.1
   camera: ^0.11.0+2
   google_mlkit_object_detection: ^0.15.1
