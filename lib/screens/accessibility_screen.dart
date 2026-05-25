@@ -22,176 +22,193 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundFor(context),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceFor(context),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.arrow_back,
-                        color: AppColors.textFor(context),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 15),
-                  Text(
-                    'Accessibility',
-                    style: TextStyle(
-                      color: AppColors.textFor(context),
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 25),
-              _toggleTile(
-                Icons.volume_up,
-                'Audio Narration',
-                'Auto-play audio narration',
-                settings.autoPlayAudio,
-                (value) {
-                  settings.toggleAutoPlay(value);
-                },
-              ),
-              const SizedBox(height: 12),
-              _toggleTile(
-                Icons.dark_mode_outlined,
-                'Light/Dark Mode',
-                'Toggle for light or dark mode',
-                settings.darkMode,
-                (value) {
-                  settings.toggleDarkMode(value);
-                },
-              ),
-              const SizedBox(height: 12),
-              _toggleTile(
-                Icons.contrast,
-                'High Contrast Mode',
-                'Increase visual contrast',
-                settings.highContrast,
-                (value) {
-                  settings.toggleContrast(value);
-                },
-              ),
-              const SizedBox(height: 12),
-              _toggleTile(
-                Icons.mic_none,
-                'Voice Navigation',
-                'Navigate with voice commands',
-                settings.voiceNavigation,
-                (value) => _toggleVoiceNavigation(settings, value),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: AppColors.cardFor(context),
-                  borderRadius: BorderRadius.circular(20),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.all(20),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight > 40
+                      ? constraints.maxHeight - 40
+                      : 0,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const SizedBox(height: 10),
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.text_fields,
-                            color: Colors.amber,
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceFor(context),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.arrow_back,
+                              color: AppColors.textFor(context),
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 15),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Text(
+                            'Accessibility',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppColors.textFor(context),
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 25),
+                    _toggleTile(
+                      Icons.volume_up,
+                      'Audio Narration',
+                      'Auto-play audio narration',
+                      settings.autoPlayAudio,
+                      (value) {
+                        settings.toggleAutoPlay(value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _toggleTile(
+                      Icons.dark_mode_outlined,
+                      'Light/Dark Mode',
+                      'Toggle for light or dark mode',
+                      settings.darkMode,
+                      (value) {
+                        settings.toggleDarkMode(value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _toggleTile(
+                      Icons.contrast,
+                      'High Contrast Mode',
+                      'Increase visual contrast',
+                      settings.highContrast,
+                      (value) {
+                        settings.toggleContrast(value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _toggleTile(
+                      Icons.mic_none,
+                      'Voice Navigation',
+                      'Navigate with voice commands',
+                      settings.voiceNavigation,
+                      (value) => _toggleVoiceNavigation(settings, value),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardFor(context),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              Text(
-                                'Text Size',
-                                style: TextStyle(
-                                  color: AppColors.textFor(context),
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.text_fields,
+                                  color: Colors.amber,
                                 ),
                               ),
-                              Text(
-                                'Adjust display text size',
-                                style: TextStyle(
-                                  color: AppColors.mutedTextFor(context),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Text Size',
+                                      style: TextStyle(
+                                        color: AppColors.textFor(context),
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Adjust display text size',
+                                      style: TextStyle(
+                                        color: AppColors.mutedTextFor(context),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 15),
+                          Row(
+                            children: [
+                              Text(
+                                'A',
+                                style: TextStyle(
+                                  color: AppColors.textFor(context),
+                                ),
+                              ),
+                              Expanded(
+                                child: Slider(
+                                  value: settings.textScale,
+                                  activeColor: Colors.amber,
+                                  inactiveColor: AppColors.isDark(context)
+                                      ? Colors.white24
+                                      : Colors.black26,
+                                  onChanged: (value) {
+                                    settings.updateTextScale(value);
+                                  },
+                                ),
+                              ),
+                              Text(
+                                'A',
+                                style: TextStyle(
+                                  color: AppColors.textFor(context),
+                                  fontSize: 24,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 15),
-                    Row(
-                      children: [
-                        Text(
-                          'A',
-                          style: TextStyle(color: AppColors.textFor(context)),
+                    Container(
+                      width: double.infinity,
+                      constraints: const BoxConstraints(minHeight: 150),
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardFor(context),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'This is a sample text to preview your accessibility settings. Adjust the slider above to change text size.',
+                        style: TextStyle(
+                          color: AppColors.mutedTextFor(context),
+                          fontSize: 14 + (settings.textScale * 10),
+                          height: 1.4,
                         ),
-                        Expanded(
-                          child: Slider(
-                            value: settings.textScale,
-                            activeColor: Colors.amber,
-                            inactiveColor: AppColors.isDark(context)
-                                ? Colors.white24
-                                : Colors.black26,
-                            onChanged: (value) {
-                              settings.updateTextScale(value);
-                            },
-                          ),
-                        ),
-                        Text(
-                          'A',
-                          style: TextStyle(
-                            color: AppColors.textFor(context),
-                            fontSize: 24,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 15),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardFor(context),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'This is a sample text to preview your accessibility settings. Adjust the slider above to change text size.',
-                    style: TextStyle(
-                      color: AppColors.mutedTextFor(context),
-                      fontSize: 14 + (settings.textScale * 10),
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

@@ -25,6 +25,8 @@ class ArtworkDetailScreen extends StatefulWidget {
 }
 
 class _ArtworkDetailScreenState extends State<ArtworkDetailScreen> {
+  static AudioPlayer? _activePlayer;
+
   final AudioPlayer player = AudioPlayer();
 
   late int selectedTab;
@@ -62,7 +64,7 @@ class _ArtworkDetailScreenState extends State<ArtworkDetailScreen> {
       });
 
       if (selectedTab == 1 && context.read<AppSettings>().autoPlayAudio) {
-        unawaited(player.play());
+        unawaited(playAudio());
       }
 
       player.durationStream.listen((value) {
@@ -154,11 +156,26 @@ class _ArtworkDetailScreenState extends State<ArtworkDetailScreen> {
       return;
     }
 
+    await _claimAudioFocus();
     await player.play();
   }
 
   Future<void> pauseAudio() async {
     await player.pause();
+
+    if (_activePlayer == player) {
+      _activePlayer = null;
+    }
+  }
+
+  Future<void> _claimAudioFocus() async {
+    final activePlayer = _activePlayer;
+
+    if (activePlayer != null && activePlayer != player) {
+      await activePlayer.pause();
+    }
+
+    _activePlayer = player;
   }
 
   Future<void> skipForward() async {
@@ -203,6 +220,10 @@ class _ArtworkDetailScreenState extends State<ArtworkDetailScreen> {
 
   @override
   void dispose() {
+    if (_activePlayer == player) {
+      _activePlayer = null;
+    }
+
     player.dispose();
     super.dispose();
   }

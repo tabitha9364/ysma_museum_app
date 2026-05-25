@@ -9,7 +9,7 @@ import '../services/auth_service.dart';
 import '../services/user_preferences.dart';
 import '../utils/colors.dart';
 
-enum _AuthIntent { signIn, signUp, google }
+enum _AuthIntent { signIn, signUp, google, addPasswordWithGoogle }
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -30,6 +30,8 @@ class _AuthScreenState extends State<AuthScreen> {
 
   _AuthIntent? _pendingIntent;
   String? _pendingDisplayName;
+  String? _pendingPasswordSetupEmail;
+  String? _pendingPasswordSetupPassword;
 
   bool _isSignUp = false;
   bool _loading = false;
@@ -45,6 +47,11 @@ class _AuthScreenState extends State<AuthScreen> {
 
     _authSubscription = _authService.authStateChanges.listen((event) {
       if (!_allowAuthNavigation || event.session == null) {
+        return;
+      }
+
+      if (_pendingIntent == _AuthIntent.addPasswordWithGoogle) {
+        unawaited(_finishGooglePasswordSetup(event.session!));
         return;
       }
 
@@ -132,33 +139,43 @@ class _AuthScreenState extends State<AuthScreen> {
 
     _pendingDisplayName = fullName;
 
-    final response = await _authService.signUpWithEmail(
-      email: email,
-      password: password,
-      fullName: fullName,
-    );
+    late final AuthResponse response;
+
+    try {
+      response = await _authService.signUpWithEmail(
+        email: email,
+        password: password,
+        fullName: fullName,
+      );
+    } on AuthException catch (error) {
+      if (_isExistingAccountError(error)) {
+        await _finishExistingSignupAttempt(email, password, fullName);
+        return;
+      }
+
+      rethrow;
+    }
 
     TextInput.finishAutofillContext(shouldSave: true);
 
     if (response.session != null) {
-      await _finishAuthenticatedSession(
-        response.session!,
-        isNewAccount: true,
-      );
+      await _finishAuthenticatedSession(response.session!, isNewAccount: true);
       return;
     }
 
     final session = await _trySignInAfterSignUp(email, password);
 
     if (session != null) {
-      await _finishAuthenticatedSession(
-        session,
-        isNewAccount: true,
-      );
+      await _finishAuthenticatedSession(session, isNewAccount: true);
       return;
     }
 
-    _showMessage('Account created successfully.');
+    if (_looksLikeExistingAccountResponse(response)) {
+      await _startGooglePasswordSetup(email, password, fullName);
+      return;
+    }
+
+    _showMessage('Check your email to confirm your account, then sign in.');
   }
 
   Future<void> _signIn(String email, String password) async {
@@ -172,17 +189,11 @@ class _AuthScreenState extends State<AuthScreen> {
 
       await UserPreferences.saveEmail(email);
 
-      await _finishAuthenticatedSession(
-        response.session!,
-        isNewAccount: false,
-      );
+      await _finishAuthenticatedSession(response.session!, isNewAccount: false);
     }
   }
 
-  Future<Session?> _trySignInAfterSignUp(
-    String email,
-    String password,
-  ) async {
+  Future<Session?> _trySignInAfterSignUp(String email, String password) async {
     try {
       final response = await _authService.signInWithEmail(
         email: email,
@@ -195,6 +206,140 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  Future<void> _finishExistingSignupAttempt(
+    String email,
+    String password,
+    String fullName,
+  ) async {
+    final session = await _trySignInAfterSignUp(email, password);
+
+    if (session != null) {
+      await _finishAuthenticatedSession(session, isNewAccount: false);
+      return;
+    }
+
+    await _startGooglePasswordSetup(email, password, fullName);
+  }
+
+  Future<void> _startGooglePasswordSetup(
+    String email,
+    String password,
+    String fullName,
+  ) async {
+    if (!mounted) {
+      return;
+    }
+
+    final shouldContinue = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Use your existing account'),
+          content: Text(
+            'This email is already connected to an account. Continue with Google once and this password will be added to the same account.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Continue with Google'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldContinue != true || !mounted) {
+      _clearPasswordSetup();
+      if (mounted) {
+        setState(() {
+          _allowAuthNavigation = false;
+          _pendingIntent = null;
+        });
+      }
+      return;
+    }
+
+    setState(() {
+      _allowAuthNavigation = true;
+      _pendingIntent = _AuthIntent.addPasswordWithGoogle;
+      _pendingPasswordSetupEmail = email;
+      _pendingPasswordSetupPassword = password;
+      _pendingDisplayName = fullName;
+    });
+
+    await _authService.signInWithGoogle();
+
+    final session = _authService.currentSession;
+
+    if (session != null) {
+      await _finishGooglePasswordSetup(session);
+      return;
+    }
+
+    _showMessage('Complete Google sign-in to add your password.');
+  }
+
+  Future<void> _finishGooglePasswordSetup(Session session) async {
+    if (_navigating) {
+      return;
+    }
+
+    final email = _pendingPasswordSetupEmail;
+    final password = _pendingPasswordSetupPassword;
+    final sessionEmail = session.user.email;
+
+    if (email == null || password == null) {
+      await _finishAuthenticatedSession(session, isNewAccount: false);
+      return;
+    }
+
+    if (mounted) {
+      setState(() => _loading = true);
+    }
+
+    if (sessionEmail == null ||
+        sessionEmail.trim().toLowerCase() != email.trim().toLowerCase()) {
+      _clearPasswordSetup();
+      await _authService.signOut();
+      _showMessage(
+        'That Google account uses a different email. Please continue with $email.',
+      );
+
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+
+      return;
+    }
+
+    try {
+      await _authService.updatePasswordForCurrentUser(
+        password: password,
+        fullName: _pendingDisplayName ?? '',
+      );
+      TextInput.finishAutofillContext(shouldSave: true);
+      _clearPasswordSetup();
+      _showMessage('Password added. You can now sign in either way.');
+      await _finishAuthenticatedSession(session, isNewAccount: false);
+    } on AuthException catch (error) {
+      _showAuthError(error);
+
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    } catch (error) {
+      _showMessage(_cleanError(error));
+
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
   Future<void> _continueWithGoogle() async {
     FocusScope.of(context).unfocus();
 
@@ -202,7 +347,9 @@ class _AuthScreenState extends State<AuthScreen> {
       _loading = true;
       _allowAuthNavigation = true;
       _pendingIntent = _AuthIntent.google;
+      _pendingDisplayName = null;
     });
+    _clearPasswordSetup();
 
     try {
       await _authService.signInWithGoogle();
@@ -210,10 +357,7 @@ class _AuthScreenState extends State<AuthScreen> {
       final session = _authService.currentSession;
 
       if (session != null) {
-        await _finishAuthenticatedSession(
-          session,
-          isNewAccount: false,
-        );
+        await _finishAuthenticatedSession(session, isNewAccount: false);
       } else {
         _showMessage('Complete Google sign-in to continue.');
       }
@@ -249,8 +393,7 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
 
-    final onboardingComplete =
-        await UserPreferences.isOnboardingComplete();
+    final onboardingComplete = await UserPreferences.isOnboardingComplete();
 
     if (onboardingComplete) {
       _goHome();
@@ -259,44 +402,31 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  Future<void> _saveAuthenticatedProfile(
-    Session session,
-    String email,
-  ) async {
-    final metadataName =
-        UserPreferences.metadataDisplayNameForUser(
+  Future<void> _saveAuthenticatedProfile(Session session, String email) async {
+    final metadataName = UserPreferences.metadataDisplayNameForUser(
       session.user,
     );
 
-    final savedName =
-        await UserPreferences.getSavedDisplayNameForEmail(
-      email,
-    );
+    final savedName = await UserPreferences.getSavedDisplayNameForEmail(email);
 
     final submittedName = _pendingDisplayName?.trim();
 
-    final displayName =
-        submittedName != null && submittedName.isNotEmpty
-            ? submittedName
-            : metadataName ?? savedName;
+    final displayName = submittedName != null && submittedName.isNotEmpty
+        ? submittedName
+        : metadataName ?? savedName;
 
     if (displayName == null || displayName.trim().isEmpty) {
       await UserPreferences.cacheProfileFromUser(session.user);
       return;
     }
 
-    await UserPreferences.saveDisplayNameForEmail(
-      email,
-      displayName,
-    );
+    await UserPreferences.saveDisplayNameForEmail(email, displayName);
 
     if (!UserPreferences.hasMetadataDisplayName(session.user)) {
       try {
         await _authService.updateDisplayName(displayName);
       } catch (error) {
-        debugPrint(
-          'Display name metadata update skipped: $error',
-        );
+        debugPrint('Display name metadata update skipped: $error');
       }
     }
   }
@@ -308,10 +438,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
     _navigating = true;
 
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      '/home',
-      (route) => false,
-    );
+    Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
   }
 
   void _goToOnboarding() {
@@ -321,10 +448,9 @@ class _AuthScreenState extends State<AuthScreen> {
 
     _navigating = true;
 
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      '/onboarding1',
-      (route) => false,
-    );
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil('/onboarding1', (route) => false);
   }
 
   void _showAuthError(AuthException error) {
@@ -340,31 +466,48 @@ class _AuthScreenState extends State<AuthScreen> {
     _showMessage(error.message);
   }
 
-  void _showMessage(String message) {
-  if (!mounted) {
-    return;
+  bool _isExistingAccountError(AuthException error) {
+    final message = error.message.toLowerCase();
+
+    return message.contains('already registered') ||
+        message.contains('already exists') ||
+        message.contains('user already');
   }
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        message,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
+  bool _looksLikeExistingAccountResponse(AuthResponse response) {
+    final identities = response.user?.identities;
+
+    return response.user == null || identities == null || identities.isEmpty;
+  }
+
+  void _clearPasswordSetup() {
+    _pendingPasswordSetupEmail = null;
+    _pendingPasswordSetupPassword = null;
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
         ),
+        backgroundColor: const Color(0xFF1B2A41),
+        behavior: SnackBarBehavior.floating,
+        elevation: 10,
+        margin: const EdgeInsets.all(12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
-      backgroundColor: const Color(0xFF1B2A41),
-      behavior: SnackBarBehavior.floating,
-      elevation: 10,
-      margin: const EdgeInsets.all(12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
-    ),
-  );
-}
+    );
+  }
 
   String _cleanError(Object error) {
     return error.toString().replaceFirst('Exception: ', '');
@@ -389,8 +532,7 @@ class _AuthScreenState extends State<AuthScreen> {
       return null;
     }
 
-    final fullName =
-        value?.trim().replaceAll(RegExp(r'\s+'), ' ') ?? '';
+    final fullName = value?.trim().replaceAll(RegExp(r'\s+'), ' ') ?? '';
 
     if (fullName.isEmpty) {
       return 'Enter your full name';
@@ -444,6 +586,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _confirmPasswordVisible = false;
       confirmPasswordController.clear();
       _pendingDisplayName = null;
+      _clearPasswordSetup();
     });
   }
 
@@ -455,35 +598,26 @@ class _AuthScreenState extends State<AuthScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 28,
-                vertical: 28,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight: constraints.maxHeight - 56,
                 ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: 420,
-                    ),
+                    constraints: const BoxConstraints(maxWidth: 420),
                     child: AutofillGroup(
                       child: Form(
                         key: _formKey,
                         child: Column(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
-                          crossAxisAlignment:
-                              CrossAxisAlignment.stretch,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             _buildLogo(),
                             const SizedBox(height: 38),
 
                             Text(
-                              _isSignUp
-                                  ? 'Sign up'
-                                  : 'Sign in',
+                              _isSignUp ? 'Sign up' : 'Sign in',
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: AppColors.textWhite,
@@ -497,24 +631,16 @@ class _AuthScreenState extends State<AuthScreen> {
                             if (_isSignUp) ...[
                               TextFormField(
                                 controller: fullNameController,
-                                textCapitalization:
-                                    TextCapitalization.words,
-                                textInputAction:
-                                    TextInputAction.next,
-                                autofillHints: const [
-                                  AutofillHints.name,
-                                ],
+                                textCapitalization: TextCapitalization.words,
+                                textInputAction: TextInputAction.next,
+                                autofillHints: const [AutofillHints.name],
                                 style: const TextStyle(
-                                  color:
-                                      AppColors.textWhite,
+                                  color: AppColors.textWhite,
                                 ),
-                                validator:
-                                    _validateFullName,
-                                decoration:
-                                    _inputDecoration(
+                                validator: _validateFullName,
+                                decoration: _inputDecoration(
                                   label: 'Full name',
-                                  icon: Icons
-                                      .badge_outlined,
+                                  icon: Icons.badge_outlined,
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -522,76 +648,52 @@ class _AuthScreenState extends State<AuthScreen> {
 
                             TextFormField(
                               controller: emailController,
-                              keyboardType:
-                                  TextInputType
-                                      .emailAddress,
-                              textInputAction:
-                                  TextInputAction.next,
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
                               autofillHints: const [
                                 AutofillHints.email,
                                 AutofillHints.username,
                               ],
                               autocorrect: false,
                               style: const TextStyle(
-                                color:
-                                    AppColors.textWhite,
+                                color: AppColors.textWhite,
                               ),
                               validator: _validateEmail,
-                              decoration:
-                                  _inputDecoration(
+                              decoration: _inputDecoration(
                                 label: 'Email',
-                                icon:
-                                    Icons.mail_outline,
+                                icon: Icons.mail_outline,
                               ),
                             ),
 
                             const SizedBox(height: 16),
 
                             TextFormField(
-                              controller:
-                                  passwordController,
-                              obscureText:
-                                  !_passwordVisible,
+                              controller: passwordController,
+                              obscureText: !_passwordVisible,
                               enableSuggestions: false,
-                              textInputAction:
-                                  _isSignUp
-                                      ? TextInputAction
-                                          .next
-                                      : TextInputAction
-                                          .done,
+                              textInputAction: _isSignUp
+                                  ? TextInputAction.next
+                                  : TextInputAction.done,
                               autofillHints: _isSignUp
-                                  ? const [
-                                      AutofillHints
-                                          .newPassword,
-                                    ]
-                                  : const [
-                                      AutofillHints
-                                          .password,
-                                    ],
+                                  ? const [AutofillHints.newPassword]
+                                  : const [AutofillHints.password],
                               style: const TextStyle(
-                                color:
-                                    AppColors.textWhite,
+                                color: AppColors.textWhite,
                               ),
-                              validator:
-                                  _validatePassword,
+                              validator: _validatePassword,
                               onFieldSubmitted: (_) {
                                 if (!_isSignUp) {
                                   _submitEmailPassword();
                                 }
                               },
-                              decoration:
-                                  _inputDecoration(
+                              decoration: _inputDecoration(
                                 label: 'Password',
-                                icon:
-                                    Icons.lock_outline,
-                                suffixIcon:
-                                    _passwordToggle(
-                                  visible:
-                                      _passwordVisible,
+                                icon: Icons.lock_outline,
+                                suffixIcon: _passwordToggle(
+                                  visible: _passwordVisible,
                                   onPressed: () {
                                     setState(() {
-                                      _passwordVisible =
-                                          !_passwordVisible;
+                                      _passwordVisible = !_passwordVisible;
                                     });
                                   },
                                 ),
@@ -602,37 +704,23 @@ class _AuthScreenState extends State<AuthScreen> {
                               const SizedBox(height: 16),
 
                               TextFormField(
-                                controller:
-                                    confirmPasswordController,
-                                obscureText:
-                                    !_confirmPasswordVisible,
-                                enableSuggestions:
-                                    false,
-                                textInputAction:
-                                    TextInputAction
-                                        .done,
+                                controller: confirmPasswordController,
+                                obscureText: !_confirmPasswordVisible,
+                                enableSuggestions: false,
+                                textInputAction: TextInputAction.done,
                                 autofillHints: const [
-                                  AutofillHints
-                                      .newPassword,
+                                  AutofillHints.newPassword,
                                 ],
                                 style: const TextStyle(
-                                  color:
-                                      AppColors.textWhite,
+                                  color: AppColors.textWhite,
                                 ),
-                                validator:
-                                    _validateConfirmPassword,
-                                onFieldSubmitted: (_) =>
-                                    _submitEmailPassword(),
-                                decoration:
-                                    _inputDecoration(
-                                  label:
-                                      'Confirm Password',
-                                  icon: Icons
-                                      .lock_reset_outlined,
-                                  suffixIcon:
-                                      _passwordToggle(
-                                    visible:
-                                        _confirmPasswordVisible,
+                                validator: _validateConfirmPassword,
+                                onFieldSubmitted: (_) => _submitEmailPassword(),
+                                decoration: _inputDecoration(
+                                  label: 'Confirm Password',
+                                  icon: Icons.lock_reset_outlined,
+                                  suffixIcon: _passwordToggle(
+                                    visible: _confirmPasswordVisible,
                                     onPressed: () {
                                       setState(() {
                                         _confirmPasswordVisible =
@@ -652,57 +740,33 @@ class _AuthScreenState extends State<AuthScreen> {
                                 onPressed: _loading
                                     ? null
                                     : _submitEmailPassword,
-                                style:
-                                    ElevatedButton
-                                        .styleFrom(
-                                  backgroundColor:
-                                      AppColors.primary,
-                                  foregroundColor:
-                                      Colors.black,
-                                  disabledBackgroundColor:
-                                      AppColors
-                                          .primary
-                                          .withValues(
-                                    alpha: 0.5,
-                                  ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.black,
+                                  disabledBackgroundColor: AppColors.primary
+                                      .withValues(alpha: 0.5),
                                   elevation: 8,
-                                  shadowColor:
-                                      AppColors
-                                          .primary
-                                          .withValues(
+                                  shadowColor: AppColors.primary.withValues(
                                     alpha: 0.24,
                                   ),
-                                  shape:
-                                      RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius
-                                            .circular(
-                                      12,
-                                    ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
                                 child: _loading
                                     ? const SizedBox(
                                         width: 22,
                                         height: 22,
-                                        child:
-                                            CircularProgressIndicator(
-                                          color:
-                                              Colors.black,
-                                          strokeWidth:
-                                              2.4,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.black,
+                                          strokeWidth: 2.4,
                                         ),
                                       )
                                     : Text(
-                                        _isSignUp
-                                            ? 'Sign up'
-                                            : 'Sign in',
-                                        style:
-                                            const TextStyle(
+                                        _isSignUp ? 'Sign up' : 'Sign in',
+                                        style: const TextStyle(
                                           fontSize: 17,
-                                          fontWeight:
-                                              FontWeight
-                                                  .bold,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
                               ),
@@ -716,43 +780,24 @@ class _AuthScreenState extends State<AuthScreen> {
 
                             SizedBox(
                               height: 54,
-                              child:
-                                  OutlinedButton.icon(
+                              child: OutlinedButton.icon(
                                 onPressed: _loading
                                     ? null
                                     : _continueWithGoogle,
-                                style:
-                                    OutlinedButton
-                                        .styleFrom(
-                                  foregroundColor:
-                                      AppColors
-                                          .textWhite,
-                                  backgroundColor:
-                                      AppColors.surface,
-                                  side:
-                                      const BorderSide(
-                                    color:
-                                        Colors.white24,
-                                  ),
-                                  shape:
-                                      RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius
-                                            .circular(
-                                      12,
-                                    ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.textWhite,
+                                  backgroundColor: AppColors.surface,
+                                  side: const BorderSide(color: Colors.white24),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                icon:
-                                    const _GoogleLogo(
-                                  size: 22,
-                                ),
+                                icon: const _GoogleLogo(size: 22),
                                 label: const Text(
                                   'Continue with Google',
                                   style: TextStyle(
                                     fontSize: 16,
-                                    fontWeight:
-                                        FontWeight.w700,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
@@ -761,10 +806,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             const SizedBox(height: 26),
 
                             TextButton(
-                              onPressed:
-                                  _loading
-                                      ? null
-                                      : _toggleMode,
+                              onPressed: _loading ? null : _toggleMode,
                               child: Text.rich(
                                 TextSpan(
                                   text: _isSignUp
@@ -772,25 +814,15 @@ class _AuthScreenState extends State<AuthScreen> {
                                       : 'Do not have an account? ',
                                   children: [
                                     TextSpan(
-                                      text: _isSignUp
-                                          ? 'Sign in'
-                                          : 'Sign up',
-                                      style:
-                                          const TextStyle(
-                                        color:
-                                            AppColors
-                                                .primary,
-                                        fontWeight:
-                                            FontWeight
-                                                .bold,
+                                      text: _isSignUp ? 'Sign in' : 'Sign up',
+                                      style: const TextStyle(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ],
                                 ),
-                                style: const TextStyle(
-                                  color:
-                                      Colors.white70,
-                                ),
+                                style: const TextStyle(color: Colors.white70),
                               ),
                             ),
                           ],
@@ -818,31 +850,23 @@ class _AuthScreenState extends State<AuthScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(
-                alpha: 0.42,
-              ),
+              color: Colors.black.withValues(alpha: 0.42),
               blurRadius: 34,
               offset: const Offset(0, 18),
             ),
             BoxShadow(
-              color: AppColors.primary.withValues(
-                alpha: 0.18,
-              ),
+              color: AppColors.primary.withValues(alpha: 0.18),
               blurRadius: 34,
               spreadRadius: 4,
             ),
             BoxShadow(
-              color: Colors.white.withValues(
-                alpha: 0.08,
-              ),
+              color: Colors.white.withValues(alpha: 0.08),
               blurRadius: 12,
               spreadRadius: 1,
             ),
           ],
         ),
-        child: Image.asset(
-          'assets/images/museum_logo.png',
-        ),
+        child: Image.asset('assets/images/museum_logo.png'),
       ),
     );
   }
@@ -852,15 +876,10 @@ class _AuthScreenState extends State<AuthScreen> {
     required VoidCallback onPressed,
   }) {
     return IconButton(
-      tooltip:
-          visible
-              ? 'Hide password'
-              : 'Show password',
+      tooltip: visible ? 'Hide password' : 'Show password',
       onPressed: onPressed,
       icon: Icon(
-        visible
-            ? Icons.visibility_off_outlined
-            : Icons.visibility_outlined,
+        visible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
         color: Colors.white70,
       ),
     );
@@ -869,25 +888,15 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget _buildDivider() {
     return Row(
       children: [
-        const Expanded(
-          child: Divider(color: Colors.white24),
-        ),
+        const Expanded(child: Divider(color: Colors.white24)),
         Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 12,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
-            _isSignUp
-                ? 'Or sign up with'
-                : 'Or sign in with',
-            style: const TextStyle(
-              color: Colors.white54,
-            ),
+            _isSignUp ? 'Or sign up with' : 'Or sign in with',
+            style: const TextStyle(color: Colors.white54),
           ),
         ),
-        const Expanded(
-          child: Divider(color: Colors.white24),
-        ),
+        const Expanded(child: Divider(color: Colors.white24)),
       ],
     );
   }
@@ -904,13 +913,8 @@ class _AuthScreenState extends State<AuthScreen> {
 
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(
-        color: Colors.white54,
-      ),
-      prefixIcon: Icon(
-        icon,
-        color: Colors.white70,
-      ),
+      labelStyle: const TextStyle(color: Colors.white54),
+      prefixIcon: Icon(icon, color: Colors.white70),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: AppColors.surface,
@@ -918,22 +922,13 @@ class _AuthScreenState extends State<AuthScreen> {
       border: border,
       enabledBorder: border,
       focusedBorder: border.copyWith(
-        borderSide: const BorderSide(
-          color: AppColors.primary,
-          width: 1.2,
-        ),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.2),
       ),
       errorBorder: border.copyWith(
-        borderSide: const BorderSide(
-          color: Colors.redAccent,
-          width: 1.2,
-        ),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
       ),
       focusedErrorBorder: border.copyWith(
-        borderSide: const BorderSide(
-          color: Colors.redAccent,
-          width: 1.2,
-        ),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
       ),
     );
   }
@@ -948,9 +943,7 @@ class _GoogleLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox.square(
       dimension: size,
-      child: CustomPaint(
-        painter: _GoogleLogoPainter(),
-      ),
+      child: CustomPaint(painter: _GoogleLogoPainter()),
     );
   }
 }
@@ -961,59 +954,27 @@ class _GoogleLogoPainter extends CustomPainter {
     final strokeWidth = size.width * 0.18;
 
     final rect =
-        Offset(
-          strokeWidth / 2,
-          strokeWidth / 2,
-        ) &
-        Size(
-          size.width - strokeWidth,
-          size.height - strokeWidth,
-        );
+        Offset(strokeWidth / 2, strokeWidth / 2) &
+        Size(size.width - strokeWidth, size.height - strokeWidth);
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
-    void drawArc(
-      Color color,
-      double start,
-      double sweep,
-    ) {
+    void drawArc(Color color, double start, double sweep) {
       paint.color = color;
 
-      canvas.drawArc(
-        rect,
-        start,
-        sweep,
-        false,
-        paint,
-      );
+      canvas.drawArc(rect, start, sweep, false, paint);
     }
 
-    drawArc(
-      const Color(0xFF4285F4),
-      -0.06 * math.pi,
-      0.42 * math.pi,
-    );
+    drawArc(const Color(0xFF4285F4), -0.06 * math.pi, 0.42 * math.pi);
 
-    drawArc(
-      const Color(0xFF34A853),
-      0.36 * math.pi,
-      0.45 * math.pi,
-    );
+    drawArc(const Color(0xFF34A853), 0.36 * math.pi, 0.45 * math.pi);
 
-    drawArc(
-      const Color(0xFFFBBC05),
-      0.81 * math.pi,
-      0.44 * math.pi,
-    );
+    drawArc(const Color(0xFFFBBC05), 0.81 * math.pi, 0.44 * math.pi);
 
-    drawArc(
-      const Color(0xFFEA4335),
-      1.25 * math.pi,
-      0.58 * math.pi,
-    );
+    drawArc(const Color(0xFFEA4335), 1.25 * math.pi, 0.58 * math.pi);
 
     final barPaint = Paint()
       ..color = const Color(0xFF4285F4)
@@ -1021,25 +982,17 @@ class _GoogleLogoPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.square;
 
-    final center = Offset(
-      size.width * 0.52,
-      size.height * 0.5,
-    );
+    final center = Offset(size.width * 0.52, size.height * 0.5);
 
     canvas.drawLine(
       center,
-      Offset(
-        size.width * 0.92,
-        size.height * 0.5,
-      ),
+      Offset(size.width * 0.92, size.height * 0.5),
       barPaint,
     );
   }
 
   @override
-  bool shouldRepaint(
-    covariant CustomPainter oldDelegate,
-  ) {
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return false;
   }
 }

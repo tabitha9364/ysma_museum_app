@@ -31,7 +31,7 @@
             <category android:name="android.intent.category.BROWSABLE" />
 
             <data
-                android:scheme="ysmauseum"
+                android:scheme="ysmamuseum"
                 android:host="login-callback" />
         </intent-filter>
 

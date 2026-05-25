@@ -22,6 +22,20 @@ class AuthService {
 
   Session? get currentSession => supabase.auth.currentSession;
 
+  String? get _authRedirectUrl {
+    if (!kIsWeb) {
+      return mobileOAuthRedirectUrl;
+    }
+
+    final baseUri = Uri.base;
+
+    if (baseUri.scheme == 'http' || baseUri.scheme == 'https') {
+      return baseUri.origin;
+    }
+
+    return null;
+  }
+
   Future<AuthResponse> signUpWithEmail({
     required String email,
     required String password,
@@ -32,7 +46,7 @@ class AuthService {
     return supabase.auth.signUp(
       email: email,
       password: password,
-      emailRedirectTo: mobileOAuthRedirectUrl,
+      emailRedirectTo: _authRedirectUrl,
       data: cleanedName.isEmpty ? null : _profileMetadata(cleanedName),
     );
   }
@@ -48,14 +62,14 @@ class AuthService {
     await supabase.auth.resend(
       type: OtpType.signup,
       email: email,
-      emailRedirectTo: mobileOAuthRedirectUrl,
+      emailRedirectTo: _authRedirectUrl,
     );
   }
 
   Future<void> signInWithGoogle() async {
     final launched = await supabase.auth.signInWithOAuth(
       OAuthProvider.google,
-      redirectTo: kIsWeb ? null : mobileOAuthRedirectUrl,
+      redirectTo: _authRedirectUrl,
     );
 
     if (!launched) {
@@ -63,6 +77,20 @@ class AuthService {
         'Could not open Google sign-in. Check that Google auth is enabled in Supabase.',
       );
     }
+  }
+
+  Future<void> updatePasswordForCurrentUser({
+    required String password,
+    required String fullName,
+  }) async {
+    final cleanedName = _cleanDisplayName(fullName);
+
+    await supabase.auth.updateUser(
+      UserAttributes(
+        password: password,
+        data: cleanedName.isEmpty ? null : _profileMetadata(cleanedName),
+      ),
+    );
   }
 
   Future<void> updateDisplayName(String displayName) async {

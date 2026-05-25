@@ -1,0 +1,7 @@
+await Supabase.initialize(
+    url: 'https://bepkeurohpfhacxxpqdb.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlcGtldXJvaHBmaGFjeHhwcWRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MTU4NjIsImV4cCI6MjA5MzE5MTg2Mn0.HXq7GzIfxSL7X7WD1KzrmI1nfXq1Dm84ShepR2Qv4PQ',
+  );
+
+Project name: ysma_museum_app
