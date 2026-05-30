@@ -46,22 +46,26 @@ class _AuthScreenState extends State<AuthScreen> {
     _loadSavedEmail();
 
     _authSubscription = _authService.authStateChanges.listen((event) {
-      if (!_allowAuthNavigation || event.session == null) {
+      final session = event.session;
+
+      if (!_allowAuthNavigation || session == null) {
         return;
       }
 
       if (_pendingIntent == _AuthIntent.addPasswordWithGoogle) {
-        unawaited(_finishGooglePasswordSetup(event.session!));
+        unawaited(_finishGooglePasswordSetup(session));
         return;
       }
 
       unawaited(
         _finishAuthenticatedSession(
-          event.session!,
+          session,
           isNewAccount: _pendingIntent == _AuthIntent.signUp,
         ),
       );
     });
+
+    unawaited(_resumePendingGoogleSignIn());
   }
 
   @override
@@ -271,6 +275,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _pendingDisplayName = fullName;
     });
 
+    await _authService.signOut();
     await _authService.signInWithGoogle();
 
     final session = _authService.currentSession;
@@ -304,6 +309,8 @@ class _AuthScreenState extends State<AuthScreen> {
     if (sessionEmail == null ||
         sessionEmail.trim().toLowerCase() != email.trim().toLowerCase()) {
       _clearPasswordSetup();
+      _pendingIntent = null;
+      await UserPreferences.setGoogleSignInPending(false);
       await _authService.signOut();
       _showMessage(
         'That Google account uses a different email. Please continue with $email.',
@@ -352,20 +359,23 @@ class _AuthScreenState extends State<AuthScreen> {
     _clearPasswordSetup();
 
     try {
+      await UserPreferences.setGoogleSignInPending(true);
+      await _authService.signOut();
       await _authService.signInWithGoogle();
 
       final session = _authService.currentSession;
 
       if (session != null) {
         await _finishAuthenticatedSession(session, isNewAccount: false);
-      } else {
-        _showMessage('Complete Google sign-in to continue.');
       }
     } on AuthException catch (error) {
+      await UserPreferences.setGoogleSignInPending(false);
       _showAuthError(error);
     } on AuthFlowException catch (error) {
+      await UserPreferences.setGoogleSignInPending(false);
       _showMessage(error.message);
     } catch (error) {
+      await UserPreferences.setGoogleSignInPending(false);
       _showMessage(_cleanError(error));
     } finally {
       if (mounted) {
@@ -381,6 +391,8 @@ class _AuthScreenState extends State<AuthScreen> {
     if (_navigating) {
       return;
     }
+
+    await UserPreferences.setGoogleSignInPending(false);
 
     final email = session.user.email ?? emailController.text.trim();
 
@@ -483,6 +495,50 @@ class _AuthScreenState extends State<AuthScreen> {
   void _clearPasswordSetup() {
     _pendingPasswordSetupEmail = null;
     _pendingPasswordSetupPassword = null;
+  }
+
+  Future<void> _resumePendingGoogleSignIn() async {
+    final pendingGoogleSignIn = await UserPreferences.isGoogleSignInPending();
+
+    if (!mounted || !pendingGoogleSignIn) {
+      return;
+    }
+
+    setState(() {
+      _allowAuthNavigation = true;
+      _pendingIntent = _AuthIntent.google;
+    });
+
+    final session = _authService.currentSession;
+
+    if (session != null) {
+      await _finishAuthenticatedSession(session, isNewAccount: false);
+      return;
+    }
+
+    unawaited(_clearStalePendingGoogleSignIn());
+  }
+
+  Future<void> _clearStalePendingGoogleSignIn() async {
+    await Future<void>.delayed(const Duration(seconds: 20));
+
+    if (!mounted ||
+        _navigating ||
+        _pendingIntent != _AuthIntent.google ||
+        _authService.currentSession != null) {
+      return;
+    }
+
+    await UserPreferences.setGoogleSignInPending(false);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _allowAuthNavigation = false;
+      _pendingIntent = null;
+    });
   }
 
   void _showMessage(String message) {

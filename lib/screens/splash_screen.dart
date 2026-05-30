@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../services/user_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,34 +14,105 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   Timer? _timer;
+  late final StreamSubscription<AuthState> _authSubscription;
+  bool _allowGoogleCallbackNavigation = false;
   bool _navigating = false;
 
-  void goToAuth() {
+  void _goToAuth() {
     if (_navigating || !mounted) {
       return;
     }
 
     _navigating = true;
 
-    Navigator.of(
-      context,
-    ).pushNamedAndRemoveUntil('/auth', (route) => false);
+    Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
+  }
+
+  Future<void> _goToSignedInDestination(Session session) async {
+    if (_navigating || !mounted) {
+      return;
+    }
+
+    _navigating = true;
+    await UserPreferences.setGoogleSignInPending(false);
+
+    final email = session.user.email;
+    if (email != null && email.trim().isNotEmpty) {
+      await UserPreferences.saveEmail(email);
+    }
+
+    await UserPreferences.cacheProfileFromUser(session.user);
+    final onboardingComplete = await UserPreferences.isOnboardingComplete();
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      onboardingComplete ? '/home' : '/onboarding1',
+      (route) => false,
+    );
+  }
+
+  Future<void> _routeAfterSplash() async {
+    final pendingGoogleSignIn =
+        _allowGoogleCallbackNavigation ||
+        await UserPreferences.isGoogleSignInPending();
+
+    if (pendingGoogleSignIn) {
+      final session = Supabase.instance.client.auth.currentSession;
+
+      if (session != null) {
+        await _goToSignedInDestination(session);
+        return;
+      }
+    }
+
+    _goToAuth();
+  }
+
+  Future<void> _restoreGoogleCallbackIfNeeded() async {
+    final pendingGoogleSignIn = await UserPreferences.isGoogleSignInPending();
+
+    if (!mounted || !pendingGoogleSignIn) {
+      return;
+    }
+
+    _allowGoogleCallbackNavigation = true;
+
+    final session = Supabase.instance.client.auth.currentSession;
+
+    if (session != null) {
+      await _goToSignedInDestination(session);
+    }
   }
 
   @override
   void initState() {
     super.initState();
+    unawaited(_restoreGoogleCallbackIfNeeded());
+
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      event,
+    ) {
+      final session = event.session;
+
+      if (_allowGoogleCallbackNavigation && session != null) {
+        unawaited(_goToSignedInDestination(session));
+      }
+    });
 
     _timer = Timer(const Duration(seconds: 5), () {
       if (!mounted) return;
 
-      goToAuth();
+      unawaited(_routeAfterSplash());
     });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _authSubscription.cancel();
     super.dispose();
   }
 
@@ -94,10 +168,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
                           Text(
                             'SMART EXPERIENCE',
-                            style: TextStyle(
-                              color: Colors.amber,
-                              fontSize: 10,
-                            ),
+                            style: TextStyle(color: Colors.amber, fontSize: 10),
                           ),
                         ],
                       ),
@@ -109,10 +180,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   const Text(
                     'Enhancing Museum Experience Through AR',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
               ),

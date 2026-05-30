@@ -42,6 +42,7 @@ class UserPreferences {
   static const String _onboardingCompleteKey = 'onboarding_complete';
   static const String _favoriteArtworkIdsKey = 'favorite_artwork_ids';
   static const String _recentActivitiesKey = 'recent_activities';
+  static const String _googleSignInPendingKey = 'google_sign_in_pending';
 
   static final ValueNotifier<int> activityVersion = ValueNotifier<int>(0);
   static final ValueNotifier<int> profileVersion = ValueNotifier<int>(0);
@@ -196,6 +197,22 @@ class UserPreferences {
   static Future<void> setOnboardingComplete(bool complete) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_onboardingCompleteKey, complete);
+  }
+
+  static Future<bool> isGoogleSignInPending() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_googleSignInPendingKey) ?? false;
+  }
+
+  static Future<void> setGoogleSignInPending(bool pending) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (pending) {
+      await prefs.setBool(_googleSignInPendingKey, true);
+      return;
+    }
+
+    await prefs.remove(_googleSignInPendingKey);
   }
 
   static Future<Set<int>> getFavoriteArtworkIds() async {

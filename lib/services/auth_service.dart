@@ -70,6 +70,9 @@ class AuthService {
     final launched = await supabase.auth.signInWithOAuth(
       OAuthProvider.google,
       redirectTo: _authRedirectUrl,
+      authScreenLaunchMode: kIsWeb
+          ? LaunchMode.platformDefault
+          : LaunchMode.externalApplication,
     );
 
     if (!launched) {
