@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -11,6 +13,7 @@ import 'package:ysma_museum_app/screens/splash_screen.dart';
 import 'package:ysma_museum_app/services/app_settings.dart';
 import 'package:ysma_museum_app/services/artwork_detection_service.dart';
 import 'package:ysma_museum_app/services/user_preferences.dart';
+import 'package:ysma_museum_app/services/voice_navigation_service.dart';
 import 'package:ysma_museum_app/utils/colors.dart';
 
 final ArtworkDetectionService artworkService = ArtworkDetectionService();
@@ -26,6 +29,7 @@ void main() async {
 
   await UserPreferences.primeCurrentUserProfile();
   await artworkService.loadModel();
+  unawaited(VoiceNavigationService.warmUp());
 
   runApp(
     ChangeNotifierProvider(

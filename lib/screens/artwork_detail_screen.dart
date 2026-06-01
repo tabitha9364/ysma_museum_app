@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import '../models/artwork.dart';
 import '../services/app_settings.dart';
+import '../services/audio_cache_service.dart';
 import '../services/supabase_service.dart';
 import '../services/user_preferences.dart';
 import '../utils/colors.dart';
@@ -28,6 +29,7 @@ class _ArtworkDetailScreenState extends State<ArtworkDetailScreen> {
   static AudioPlayer? _activePlayer;
 
   final AudioPlayer player = AudioPlayer();
+  late final Future<void> _audioSetupFuture;
 
   late int selectedTab;
 
@@ -43,17 +45,25 @@ class _ArtworkDetailScreenState extends State<ArtworkDetailScreen> {
   void initState() {
     super.initState();
     selectedTab = widget.initialTab;
-    setupAudio();
+    _audioSetupFuture = setupAudio();
     loadRelatedArtworks();
   }
 
   Future<void> setupAudio() async {
-    if (widget.artwork.audioUrl.trim().isEmpty) {
+    final audioUrl = widget.artwork.audioUrl.trim();
+
+    if (audioUrl.isEmpty) {
       return;
     }
 
     try {
-      await player.setUrl(widget.artwork.audioUrl);
+      final cachedAudio = await AudioCacheService.cachedAudioFile(audioUrl);
+
+      if (cachedAudio != null) {
+        await player.setFilePath(cachedAudio.path);
+      } else {
+        await player.setUrl(audioUrl);
+      }
 
       if (!mounted) {
         return;
@@ -152,8 +162,12 @@ class _ArtworkDetailScreenState extends State<ArtworkDetailScreen> {
 
   Future<void> playAudio() async {
     if (!audioReady) {
-      _showMessage('Audio is not available for this artwork yet.');
-      return;
+      await _audioSetupFuture;
+
+      if (!audioReady) {
+        _showMessage('Audio is not available for this artwork yet.');
+        return;
+      }
     }
 
     await _claimAudioFocus();

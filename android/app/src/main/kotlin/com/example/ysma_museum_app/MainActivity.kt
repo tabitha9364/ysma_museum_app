@@ -43,7 +43,14 @@ class MainActivity : FlutterActivity(), TextToSpeech.OnInitListener {
         textToSpeechReady = status == TextToSpeech.SUCCESS
 
         if (textToSpeechReady) {
-            textToSpeech?.language = Locale.US
+            val engine = textToSpeech
+            engine?.language = Locale.US
+            engine?.setSpeechRate(1.0f)
+            engine?.playSilentUtterance(
+                1L,
+                TextToSpeech.QUEUE_ADD,
+                "museum_navigation_warmup"
+            )
             pendingSpeech?.let { speak(it) }
             pendingSpeech = null
         }
@@ -52,6 +59,12 @@ class MainActivity : FlutterActivity(), TextToSpeech.OnInitListener {
     private fun warmUpTextToSpeech() {
         if (textToSpeech == null) {
             textToSpeech = TextToSpeech(this, this)
+        } else if (textToSpeechReady) {
+            textToSpeech?.playSilentUtterance(
+                1L,
+                TextToSpeech.QUEUE_ADD,
+                "museum_navigation_warmup"
+            )
         }
     }
 

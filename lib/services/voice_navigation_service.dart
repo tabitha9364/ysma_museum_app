@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -19,7 +21,7 @@ class VoiceNavigationService {
     final textDirection = Directionality.of(context);
     final view = View.of(context);
 
-    await HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
 
     try {
       final spoken = await _channel.invokeMethod<bool>('speak', {'text': text});
